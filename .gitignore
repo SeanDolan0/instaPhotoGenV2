@@ -1,3 +1,11 @@
 node_modules
 dist
 *.local
+*.tsbuildinfo
+*.log
+
+# Internal workspace — not for public consumption
+.claude/
+.superpowers/
+docs/superpowers/
+HANDOFF.md

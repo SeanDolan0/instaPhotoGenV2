@@ -1,28 +1,29 @@
 import type { NormalizedMetadata } from '../types'
+import ExifReader from 'exifreader'
 
 export async function extractMetadata(file: File): Promise<Partial<NormalizedMetadata>> {
   try {
-    const exifr = await import('exifr')
-    const tags = await exifr.parse(file, [
-      'Make', 'Model', 'LensModel', 'FNumber', 'ExposureTime',
-      'ISOSpeedRatings', 'FocalLength', 'FocalLengthIn35mm',
-      'ExposureBiasValue', 'WhiteBalance', 'MeteringMode',
-      'Flash', 'DateTimeOriginal',
-    ])
+    const buffer = await file.arrayBuffer()
+    const tags = ExifReader.load(buffer)
+
+    const get = (name: string) => {
+      const tag = (tags as Record<string, { description?: string }>)[name]
+      return String(tag?.description ?? '')
+    }
 
     return {
-      camera: normalizeCamera(tags?.Make, tags?.Model),
-      lens: normalizeLens(tags?.LensModel),
-      aperture: normalizeAperture(tags?.FNumber),
-      shutter: normalizeShutter(tags?.ExposureTime),
-      iso: normalizeIso(tags?.ISOSpeedRatings),
-      focal: normalizeFocal(tags?.FocalLength),
-      focal35: normalizeFocal35(tags?.FocalLengthIn35mm),
-      ev: normalizeEv(tags?.ExposureBiasValue),
-      wb: normalizeWB(tags?.WhiteBalance),
-      metering: normalizeMetering(tags?.MeteringMode),
-      flash: normalizeFlash(tags?.Flash),
-      date: normalizeDate(tags?.DateTimeOriginal),
+      camera: normalizeCamera(get('Make'), get('Model')),
+      lens: normalizeLens(get('LensModel') || get('LensSpecification')),
+      aperture: normalizeAperture(get('FNumber') || get('ApertureValue')),
+      shutter: normalizeShutter(get('ExposureTime') || get('ShutterSpeedValue')),
+      iso: normalizeIso(get('ISOSpeedRatings') || get('ISO')),
+      focal: normalizeFocal(get('FocalLength')),
+      focal35: normalizeFocal35(get('FocalLengthIn35mmFilm')),
+      ev: normalizeEv(get('ExposureBiasValue')),
+      wb: normalizeWB(get('WhiteBalance')),
+      metering: normalizeMetering(get('MeteringMode')),
+      flash: normalizeFlash(get('Flash')),
+      date: normalizeDate(get('DateTimeOriginal')),
     }
   } catch {
     return {}
@@ -39,65 +40,66 @@ export function loadImage(file: File): Promise<HTMLImageElement> {
   })
 }
 
-function normalizeCamera(make: string | undefined, model: string | undefined): string {
-  const parts = [make, model].filter(Boolean)
-  return parts.join(' ').trim()
+function normalizeCamera(make: string, model: string): string {
+  return [make, model].filter(Boolean).join(' ').trim()
 }
 
-function normalizeLens(raw: string | undefined): string {
-  return (raw ?? '').trim()
+function normalizeLens(raw: string): string {
+  return raw.trim()
 }
 
-function normalizeAperture(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  const cleaned = String(raw).replace(/f\/?\s*/i, '').trim()
+function normalizeAperture(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/f\/?\s*/i, '').trim()
   return cleaned ? `f/${cleaned}` : ''
 }
 
-function normalizeShutter(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  // exifr returns ExposureTime as a decimal or fraction string like "1/125"
-  const s = String(raw)
-  return s.includes('/') ? `${s}s` : `${parseFloat(s).toFixed(1).replace(/\.0$/, '')}s`
+function normalizeShutter(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/\s*s(ec)?\.?/i, '').trim()
+  return cleaned ? `${cleaned}s` : ''
 }
 
-function normalizeIso(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  return `ISO ${raw}`
+function normalizeIso(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/iso/gi, '').trim()
+  return cleaned ? `ISO ${cleaned}` : ''
 }
 
-function normalizeFocal(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  return `${raw}mm`
+function normalizeFocal(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/mm/gi, '').trim()
+  return cleaned ? `${cleaned}mm` : ''
 }
 
-function normalizeFocal35(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  return `${raw}mm (35mm)`
+function normalizeFocal35(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/mm/gi, '').trim()
+  return cleaned ? `${cleaned}mm (35mm)` : ''
 }
 
-function normalizeEv(raw: number | string | undefined): string {
-  if (raw == null) return ''
-  const n = typeof raw === 'number' ? raw : parseFloat(String(raw))
-  return `${n > 0 ? '+' : ''}${n} EV`
+function normalizeEv(raw: string): string {
+  if (!raw) return ''
+  const cleaned = raw.replace(/\s*ev\s*/i, '').trim()
+  return cleaned ? `${cleaned} EV` : ''
 }
 
-function normalizeWB(raw: string | undefined): string {
+function normalizeWB(raw: string): string {
   if (!raw) return ''
   return `WB ${raw.trim()}`
 }
 
-function normalizeMetering(raw: string | undefined): string {
+function normalizeMetering(raw: string): string {
   if (!raw) return ''
   return `Metering ${raw.trim()}`
 }
 
-function normalizeFlash(raw: string | undefined): string {
+function normalizeFlash(raw: string): string {
   if (!raw) return ''
   return `Flash ${raw.trim()}`
 }
 
-function normalizeDate(raw: string | undefined): string {
+function normalizeDate(raw: string): string {
   if (!raw) return ''
   const match = raw.match(/^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}:\d{2})/)
   if (match) {

@@ -2,6 +2,7 @@ export interface MetadataFieldConfig {
   key: string
   label: string
   enabled: boolean
+  side: 'left' | 'right'
 }
 
 export interface ExportPresetEntry {
@@ -20,6 +21,8 @@ export interface SpacingConfig {
   textSize: number
   textOffsetY: number
   xInset: number
+  photoScale: number
+  textColor: string
 }
 
 export interface BrandingConfig {
@@ -32,7 +35,8 @@ export interface BrandingConfig {
 export interface AppSettings {
   exportTarget: ExportTarget
   metadataFields: MetadataFieldConfig[]
-  metadataOverrides: string
+  metadataText: string
+  metadataTextRight: string
   fontFamily: string
   spacing: SpacingConfig
   darkMode: boolean | 'system'

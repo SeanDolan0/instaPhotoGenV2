@@ -1,12 +1,10 @@
 import { useSettings } from '../../contexts/SettingsContext'
-import { useTheme } from '../../contexts/ThemeContext'
 import styles from '../../styles/ControlPanel.module.css'
 
 const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'Source Serif 4']
 
 export default function StylingPanel() {
   const { settings, settingsDispatch } = useSettings()
-  const { theme, toggleTheme } = useTheme()
 
   return (
     <section className={styles.section}>
@@ -20,6 +18,20 @@ export default function StylingPanel() {
         >
           {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
+      </label>
+
+      <label className={styles.fieldRow}>
+        <span>Photo Size</span>
+        <div className={styles.sliderGroup}>
+          <input
+            type="range"
+            min={10}
+            max={100}
+            value={settings.spacing.photoScale}
+            onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { photoScale: Number(e.target.value) } })}
+          />
+          <span className={styles.sliderVal}>{settings.spacing.photoScale}%</span>
+        </div>
       </label>
 
       <label className={styles.fieldRow}>
@@ -64,16 +76,15 @@ export default function StylingPanel() {
         </div>
       </label>
 
-      <div className={styles.fieldRow}>
-        <span>Dark Mode</span>
-        <button
-          className={styles.toggleBtn}
-          onClick={toggleTheme}
-          title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-      </div>
+      <label className={styles.fieldRow}>
+        <span>Text Color</span>
+        <input
+          type="color"
+          value={settings.spacing.textColor}
+          onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { textColor: e.target.value } })}
+        />
+      </label>
+
     </section>
   )
 }
