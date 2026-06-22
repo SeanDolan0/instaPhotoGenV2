@@ -3,7 +3,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { presetsGrouped } from '../../lib/targets'
 import styles from '../../styles/ControlPanel.module.css'
 
-export default function ExportTargetSelect() {
+export default function ExportTargetSelect({ compact }: { compact?: boolean }) {
   const { settings, settingsDispatch } = useSettings()
   const [custom, setCustom] = useState(
     settings.exportTarget.type === 'custom'
@@ -21,8 +21,8 @@ export default function ExportTargetSelect() {
   const isCustom = settings.exportTarget.type === 'custom'
 
   return (
-    <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>Export Target</h3>
+    <>
+      {!compact && <h3 className={styles.sectionTitle}>Export Target</h3>}
       <select
         value={settings.exportTarget.type === 'preset' ? settings.exportTarget.key : '__custom__'}
         onChange={e => {
@@ -79,6 +79,5 @@ export default function ExportTargetSelect() {
           </span>
         </div>
       )}
-    </section>
-  )
+    </>)
 }

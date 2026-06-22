@@ -3,12 +3,12 @@ import styles from '../../styles/ControlPanel.module.css'
 
 const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'Source Serif 4']
 
-export default function StylingPanel() {
+export default function StylingPanel({ compact }: { compact?: boolean }) {
   const { settings, settingsDispatch } = useSettings()
 
   return (
-    <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>Styling</h3>
+    <>
+      {!compact && <h3 className={styles.sectionTitle}>Styling</h3>}
 
       <label className={styles.fieldRow}>
         <span>Font</span>
@@ -85,6 +85,6 @@ export default function StylingPanel() {
         />
       </label>
 
-    </section>
+    </>
   )
 }

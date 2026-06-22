@@ -264,9 +264,78 @@
   cursor: not-allowed;
 }
 
+/* Collapsible Section */
+.collapseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.collapseIcon {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+/* Reorder buttons */
+.reorderBtn {
+  font-size: 0.6rem;
+  padding: 2px 3px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.reorderBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .panel {
     max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .metaLabel {
+    font-size: 0.85rem;
+    padding: 6px 4px;
+  }
+
+  .metaLabel input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+  }
+
+  .sideBtn,
+  .reorderBtn {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+  }
+
+  .dropZone {
+    padding: 20px 12px;
+  }
+
+  .section {
+    padding: 8px 10px;
   }
 }

@@ -194,3 +194,16 @@ input:focus {
     padding: 0 12px 12px;
   }
 }
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 0 8px 8px;
+  }
+  .app-header {
+    padding: 12px 0;
+    margin-bottom: 12px;
+  }
+  .app-logo {
+    font-size: 1.05rem;
+  }
+}

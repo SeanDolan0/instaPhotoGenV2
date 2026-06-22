@@ -29,7 +29,7 @@ function composeText(
   return lines.join('\n')
 }
 
-export default function MetadataPanel() {
+export default function MetadataPanel({ compact }: { compact?: boolean }) {
   const { settings, settingsDispatch, images, selectedImageIdx } = useSettings()
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
@@ -72,6 +72,59 @@ export default function MetadataPanel() {
     setOverIdx(null)
   }
 
+  function handleMoveUp(idx: number) {
+    if (idx <= 0) return
+    const fields = [...settings.metadataFields]
+    const [moved] = fields.splice(idx, 1)
+    fields.splice(idx - 1, 0, moved)
+    settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
+  }
+
+  function handleMoveDown(idx: number) {
+    if (idx >= settings.metadataFields.length - 1) return
+    const fields = [...settings.metadataFields]
+    const [moved] = fields.splice(idx, 1)
+    fields.splice(idx + 1, 0, moved)
+    settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
+  }
+
+  // --- Touch drag (HTML5 drag doesn't work on touch) ---
+  const touchRef = useRef<{ startIdx: number } | null>(null)
+
+  function handleTouchStart(e: React.TouchEvent, idx: number) {
+    // Don't start drag on button/input taps
+    if ((e.target as HTMLElement).closest('button, input, label')) return
+    touchRef.current = { startIdx: idx }
+    setDragIdx(idx)
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const t = touchRef.current
+    if (!t) return
+    e.preventDefault() // prevent page scroll while dragging
+
+    const touch = e.touches[0]
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const item = el?.closest<HTMLElement>('[data-meta-idx]')
+    if (!item) return
+
+    const overIdx = Number(item.dataset.metaIdx)
+    if (isNaN(overIdx) || overIdx === t.startIdx) return
+
+    setOverIdx(overIdx)
+    const fields = [...settings.metadataFields]
+    const [moved] = fields.splice(t.startIdx, 1)
+    fields.splice(overIdx, 0, moved)
+    settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
+    touchRef.current = { startIdx: overIdx }
+  }
+
+  function handleTouchEnd() {
+    touchRef.current = null
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
   function handleSideToggle(key: string) {
     const field = settings.metadataFields.find(f => f.key === key)
     if (!field) return
@@ -81,93 +134,78 @@ export default function MetadataPanel() {
     })
   }
 
+  function renderField(field: MetadataFieldConfig, idx: number, sideLabel: string) {
+    return (
+      <div
+        key={field.key}
+        data-meta-idx={idx}
+        className={`${styles.metaItem} ${dragIdx === idx ? styles.metaDragging : ''} ${overIdx === idx ? styles.metaOver : ''}`}
+        draggable
+        onDragStart={() => handleDragStart(idx)}
+        onDragOver={e => handleDragOver(e, idx)}
+        onDragEnd={handleDragEnd}
+        onDragLeave={handleDragLeave}
+        onTouchStart={e => handleTouchStart(e, idx)}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {field.key.startsWith('__linebreak__') ? (
+          <span className={styles.lineBreak} />
+        ) : (
+          <label className={styles.metaLabel}>
+            <input
+              type="checkbox"
+              checked={field.enabled}
+              onChange={() => settingsDispatch({ type: 'TOGGLE_METADATA_FIELD', payload: field.key })}
+            />
+            <span>{field.label}</span>
+            <span className={styles.dragHandle}>⠿</span>
+          </label>
+        )}
+        {!field.key.startsWith('__linebreak__') && (
+          <>
+            <button
+              className={styles.reorderBtn}
+              onClick={() => handleMoveUp(idx)}
+              title="Move up"
+              aria-label="Move up"
+            >▲</button>
+            <button
+              className={styles.reorderBtn}
+              onClick={() => handleMoveDown(idx)}
+              title="Move down"
+              aria-label="Move down"
+            >▼</button>
+            <button
+              className={styles.sideBtn}
+              onClick={() => handleSideToggle(field.key)}
+              title={`Move to ${sideLabel}`}
+            >
+              {sideLabel === 'right' ? '→' : '←'}
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>Metadata Fields</h3>
+    <>
+      {!compact && <h3 className={styles.sectionTitle}>Metadata Fields</h3>}
+      <span className={styles.sideLabel}>Left</span>
       <div ref={listRef} className={styles.metaList}>
         {settings.metadataFields
           .filter(f => f.side === 'left')
-          .map(field => {
-            const idx = settings.metadataFields.indexOf(field)
-            return (
-              <div
-                key={field.key}
-                className={`${styles.metaItem} ${dragIdx === idx ? styles.metaDragging : ''} ${overIdx === idx ? styles.metaOver : ''}`}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
-                onDragOver={e => handleDragOver(e, idx)}
-                onDragEnd={handleDragEnd}
-                onDragLeave={handleDragLeave}
-              >
-                {field.key.startsWith('__linebreak__') ? (
-                  <span className={styles.lineBreak} />
-                ) : (
-                  <label className={styles.metaLabel}>
-                    <input
-                      type="checkbox"
-                      checked={field.enabled}
-                      onChange={() => settingsDispatch({ type: 'TOGGLE_METADATA_FIELD', payload: field.key })}
-                    />
-                    <span>{field.label}</span>
-                    <span className={styles.dragHandle}>⠿</span>
-                  </label>
-                )}
-                {!field.key.startsWith('__linebreak__') && (
-                  <button
-                    className={styles.sideBtn}
-                    onClick={() => handleSideToggle(field.key)}
-                    title="Move to right side"
-                  >
-                    →
-                  </button>
-                )}
-              </div>
-            )
-          })}
+          .map(field => renderField(field, settings.metadataFields.indexOf(field), 'right'))}
       </div>
 
       <div className={styles.sectionDivider} />
 
+      <span className={styles.sideLabel}>Right</span>
       <div className={styles.metaList}>
         {settings.metadataFields
           .filter(f => f.side === 'right')
-          .map(field => {
-            const idx = settings.metadataFields.indexOf(field)
-            return (
-              <div
-                key={field.key}
-                className={`${styles.metaItem} ${dragIdx === idx ? styles.metaDragging : ''} ${overIdx === idx ? styles.metaOver : ''}`}
-                draggable
-                onDragStart={() => handleDragStart(idx)}
-                onDragOver={e => handleDragOver(e, idx)}
-                onDragEnd={handleDragEnd}
-                onDragLeave={handleDragLeave}
-              >
-                {field.key.startsWith('__linebreak__') ? (
-                  <span className={styles.lineBreak} />
-                ) : (
-                  <label className={styles.metaLabel}>
-                    <input
-                      type="checkbox"
-                      checked={field.enabled}
-                      onChange={() => settingsDispatch({ type: 'TOGGLE_METADATA_FIELD', payload: field.key })}
-                    />
-                    <span>{field.label}</span>
-                    <span className={styles.dragHandle}>⠿</span>
-                  </label>
-                )}
-                {!field.key.startsWith('__linebreak__') && (
-                  <button
-                    className={styles.sideBtn}
-                    onClick={() => handleSideToggle(field.key)}
-                    title="Move to left side"
-                  >
-                    ←
-                  </button>
-                )}
-              </div>
-            )
-          })}
+          .map(field => renderField(field, settings.metadataFields.indexOf(field), 'left'))}
       </div>
 
       <textarea
@@ -182,6 +220,6 @@ export default function MetadataPanel() {
         onChange={e => settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: e.target.value })}
         rows={3}
       />
-    </section>
+    </>
   )
 }

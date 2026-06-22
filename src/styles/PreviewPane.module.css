@@ -133,3 +133,30 @@
 .thumb:hover .thumbRemove {
   opacity: 1;
 }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .actions {
+    flex: 1;
+    min-width: 0;
+  }
+  .filename {
+    max-width: 120px;
+    font-size: 0.75rem;
+  }
+  .downloadBtn {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+  .carousel {
+    gap: 6px;
+  }
+  .thumb {
+    width: 52px;
+    height: 52px;
+  }
+}

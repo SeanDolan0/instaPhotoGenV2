@@ -1,22 +1,22 @@
 import { useSettings } from '../../contexts/SettingsContext'
 import styles from '../../styles/ControlPanel.module.css'
 
-export default function BrandingPanel() {
+export default function BrandingPanel({ compact }: { compact?: boolean }) {
   const { settings, settingsDispatch } = useSettings()
   const brand = settings.branding
 
   return (
-    <section className={styles.section}>
-      <h3 className={styles.sectionTitle}>
-        Branding
-        <label className={styles.toggleInline}>
-          <input
-            type="checkbox"
-            checked={brand.enabled}
-            onChange={() => settingsDispatch({ type: 'SET_BRANDING', payload: { enabled: !brand.enabled } })}
-          />
-        </label>
-      </h3>
+    <>
+      {!compact && <h3 className={styles.sectionTitle}>Branding</h3>}
+
+      <label className={styles.fieldRow}>
+        <span>Watermark</span>
+        <input
+          type="checkbox"
+          checked={brand.enabled}
+          onChange={() => settingsDispatch({ type: 'SET_BRANDING', payload: { enabled: !brand.enabled } })}
+        />
+      </label>
 
       {brand.enabled && (
         <div className={styles.brandFields}>
@@ -40,6 +40,6 @@ export default function BrandingPanel() {
           </label>
         </div>
       )}
-    </section>
+    </>
   )
 }
