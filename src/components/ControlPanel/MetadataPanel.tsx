@@ -89,25 +89,21 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
   }
 
   // --- Touch drag (HTML5 drag doesn't work on touch) ---
-  const touchRef = useRef<{ startIdx: number } | null>(null)
+  // React registers onTouchMove as passive, so we use a native non-passive listener
+  const touchRef = useRef<{ startIdx: number; startY: number; moved: boolean } | null>(null)
+  const touchMoveFnRef = useRef<(e: TouchEvent) => void>(() => {})
 
-  function handleTouchStart(e: React.TouchEvent, idx: number) {
-    // Don't start drag on button/input taps
-    if ((e.target as HTMLElement).closest('button, input, label')) return
-    touchRef.current = { startIdx: idx }
-    setDragIdx(idx)
-  }
-
-  function handleTouchMove(e: React.TouchEvent) {
+  // Keep the handler function in a ref so the native listener always has the latest closure
+  touchMoveFnRef.current = (e: TouchEvent) => {
     const t = touchRef.current
     if (!t) return
-    e.preventDefault() // prevent page scroll while dragging
+    if (!t.moved && Math.abs(e.touches[0].clientY - t.startY) < 6) return
+    if (!t.moved) t.moved = true
+    e.preventDefault()
 
-    const touch = e.touches[0]
-    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
     const item = el?.closest<HTMLElement>('[data-meta-idx]')
     if (!item) return
-
     const overIdx = Number(item.dataset.metaIdx)
     if (isNaN(overIdx) || overIdx === t.startIdx) return
 
@@ -116,7 +112,20 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
     const [moved] = fields.splice(t.startIdx, 1)
     fields.splice(overIdx, 0, moved)
     settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
-    touchRef.current = { startIdx: overIdx }
+    touchRef.current = { startIdx: overIdx, startY: t.startY, moved: true }
+  }
+
+  // Attach once — the ref swap above keeps it fresh
+  useEffect(() => {
+    const handler = (e: TouchEvent) => touchMoveFnRef.current(e)
+    document.addEventListener('touchmove', handler, { passive: false })
+    return () => document.removeEventListener('touchmove', handler)
+  }, [])
+
+  function handleTouchStart(e: React.TouchEvent, idx: number) {
+    if ((e.target as HTMLElement).closest('button')) return
+    touchRef.current = { startIdx: idx, startY: e.touches[0].clientY, moved: false }
+    setDragIdx(idx)
   }
 
   function handleTouchEnd() {
@@ -146,7 +155,6 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
         onDragEnd={handleDragEnd}
         onDragLeave={handleDragLeave}
         onTouchStart={e => handleTouchStart(e, idx)}
-        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {field.key.startsWith('__linebreak__') ? (

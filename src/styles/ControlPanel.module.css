@@ -121,6 +121,7 @@
   gap: 2px;
   border-radius: var(--radius-sm);
   transition: background 0.15s;
+  touch-action: none;
 }
 
 .metaItem:hover {
