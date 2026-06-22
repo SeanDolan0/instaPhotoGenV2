@@ -13,7 +13,9 @@ export const EXPORT_PRESETS = [
   { key: 'x-post', label: 'Post', group: 'X (Twitter)', width: 1600, height: 900 },
   { key: 'pin-pin', label: 'Pin', group: 'Pinterest', width: 1000, height: 1500 },
   { key: 'yt-thumb', label: 'Thumbnail', group: 'YouTube', width: 1280, height: 720 },
-] as const
+]
+
+export type ExportPreset = (typeof EXPORT_PRESETS)[number]
 
 export function getTargetDimensions(target: ExportTarget): { width: number; height: number } {
   if (target.type === 'custom') return target.dimensions
@@ -27,11 +29,11 @@ export function getTargetLabel(target: ExportTarget): string {
   return preset ? `${preset.group} — ${preset.label}` : 'Custom'
 }
 
-export function presetsGrouped(): Record<string, typeof EXPORT_PRESETS> {
-  const groups: Record<string, typeof EXPORT_PRESETS> = {}
+export function presetsGrouped() {
+  const groups: Record<string, ExportPreset[]> = {}
   for (const p of EXPORT_PRESETS) {
     if (!groups[p.group]) groups[p.group] = []
-    groups[p.group].push(p as any)
+    groups[p.group].push(p)
   }
   return groups
 }

@@ -7,7 +7,10 @@
       "Bash(npm run *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(echo \"Task 1: complete \\(commits 0aa106f, build & scaffold done\\)\")",
+      "Bash(mkdir -p /c/Users/sedol/Documents/instaPhotoGenV2/src/lib)",
+      "Bash(npx tsc *)"
     ]
   }
 }

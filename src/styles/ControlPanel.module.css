@@ -1,0 +1,227 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: calc(100vh - 80px);
+  padding-right: 4px;
+}
+
+.section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Drop zone */
+.dropZone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dropZone:hover,
+.dropZoneActive {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dropText {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Export target */
+.customSize {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.customSize label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.customSize input {
+  width: 72px;
+}
+
+.ratio {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* Metadata list */
+.metaList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaItem {
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.metaItem:hover {
+  background: var(--bg-hover);
+}
+
+.metaDragging {
+  opacity: 0.4;
+}
+
+.metaOver {
+  border-top: 2px solid var(--accent);
+}
+
+.metaLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  cursor: grab;
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+.metaLabel input[type='checkbox'] {
+  cursor: pointer;
+}
+
+.dragHandle {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+
+.lineBreak {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 6px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  cursor: grab;
+}
+
+/* Field row */
+.fieldRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.fieldRow span:first-child {
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.sliderGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.sliderGroup input[type='range'] {
+  flex: 1;
+}
+
+.sliderVal {
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Toggle */
+.toggleBtn {
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.toggleBtn:hover {
+  background: var(--bg-hover);
+}
+
+.toggleInline {
+  display: flex;
+  align-items: center;
+}
+
+/* Branding */
+.brandFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brandInput {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Export button */
+.exportBtn {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.exportBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .panel {
+    max-height: none;
+  }
+}

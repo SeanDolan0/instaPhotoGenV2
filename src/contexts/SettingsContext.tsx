@@ -75,7 +75,7 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [savedSettings, setSavedSettings] = useLocalStorage('ipg-settings', DEFAULT_SETTINGS)
+  const [savedSettings] = useLocalStorage('ipg-settings', DEFAULT_SETTINGS)
   const [settings, settingsDispatch] = useReducer(settingsReducer, savedSettings)
   const [images, setImages] = useState<ImageEntry[]>([])
   const [selectedImageIdx, setSelectedImageIdx] = useState(0)
