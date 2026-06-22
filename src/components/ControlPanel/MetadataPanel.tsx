@@ -88,17 +88,36 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
     settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
   }
 
-  // --- Touch drag (HTML5 drag doesn't work on touch) ---
-  // React registers onTouchMove as passive, so we use a native non-passive listener
-  const touchRef = useRef<{ startIdx: number; startY: number; moved: boolean } | null>(null)
+  // --- Touch drag: long-press to start, scroll normally otherwise ---
+  const longPressMs = 100
+  const scrollCancelPx = 10
+  const touchRef = useRef<{
+    startIdx: number
+    startY: number
+    dragging: boolean
+  } | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Non-passive touchmove listener — only prevents scroll while actively dragging
   const touchMoveFnRef = useRef<(e: TouchEvent) => void>(() => {})
 
-  // Keep the handler function in a ref so the native listener always has the latest closure
   touchMoveFnRef.current = (e: TouchEvent) => {
     const t = touchRef.current
     if (!t) return
-    if (!t.moved && Math.abs(e.touches[0].clientY - t.startY) < 6) return
-    if (!t.moved) t.moved = true
+
+    // Not in drag mode — check if scrolling cancelled the long press
+    if (!t.dragging) {
+      if (Math.abs(e.touches[0].clientY - t.startY) > scrollCancelPx) {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current)
+          longPressTimer.current = null
+        }
+        touchRef.current = null
+      }
+      return // let browser scroll normally
+    }
+
+    // Drag mode — swallow the move to prevent scroll
     e.preventDefault()
 
     const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
@@ -112,10 +131,9 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
     const [moved] = fields.splice(t.startIdx, 1)
     fields.splice(overIdx, 0, moved)
     settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
-    touchRef.current = { startIdx: overIdx, startY: t.startY, moved: true }
+    touchRef.current = { startIdx: overIdx, startY: t.startY, dragging: true }
   }
 
-  // Attach once — the ref swap above keeps it fresh
   useEffect(() => {
     const handler = (e: TouchEvent) => touchMoveFnRef.current(e)
     document.addEventListener('touchmove', handler, { passive: false })
@@ -124,11 +142,23 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
 
   function handleTouchStart(e: React.TouchEvent, idx: number) {
     if ((e.target as HTMLElement).closest('button')) return
-    touchRef.current = { startIdx: idx, startY: e.touches[0].clientY, moved: false }
-    setDragIdx(idx)
+
+    touchRef.current = { startIdx: idx, startY: e.touches[0].clientY, dragging: false }
+
+    // Start long-press timer
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null
+      if (!touchRef.current || touchRef.current.dragging) return
+      touchRef.current = { ...touchRef.current, dragging: true }
+      setDragIdx(idx)
+    }, longPressMs)
   }
 
   function handleTouchEnd() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
     touchRef.current = null
     setDragIdx(null)
     setOverIdx(null)
