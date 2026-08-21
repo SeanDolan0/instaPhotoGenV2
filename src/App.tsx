@@ -1,8 +1,75 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
-import { SettingsProvider } from './contexts/SettingsContext'
+import { SettingsProvider, useSettings } from './contexts/SettingsContext'
+import { loadImage, extractMetadata } from './lib/exif'
+import type { ImageEntry } from './types'
 import ControlPanel from './components/ControlPanel/ControlPanel'
 import PreviewPane from './components/PreviewPane/PreviewPane'
+
+function DropOverlay() {
+  const { addImages } = useSettings()
+  const [visible, setVisible] = useState(false)
+  const counterRef = useRef(0)
+
+  const handleFiles = useCallback(async (files: FileList) => {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    if (!imageFiles.length) return
+    const entries = await Promise.all(
+      imageFiles.map(async (file) => {
+        try {
+          const [img, metadata] = await Promise.all([loadImage(file), extractMetadata(file)])
+          return { id: crypto.randomUUID(), file, img, metadata }
+        } catch { return null }
+      }),
+    )
+    addImages(entries.filter(Boolean) as ImageEntry[])
+  }, [addImages])
+
+  useEffect(() => {
+    function onDragEnter(e: DragEvent) {
+      e.preventDefault()
+      counterRef.current++
+      if (counterRef.current === 1) setVisible(true)
+    }
+    function onDragOver(e: DragEvent) { e.preventDefault() }
+    function onDragLeave(e: DragEvent) {
+      e.preventDefault()
+      counterRef.current--
+      if (counterRef.current === 0) setVisible(false)
+    }
+    function onDrop(e: DragEvent) {
+      e.preventDefault()
+      counterRef.current = 0
+      setVisible(false)
+      if (e.dataTransfer?.files.length) handleFiles(e.dataTransfer.files)
+    }
+    window.addEventListener('dragenter', onDragEnter)
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragleave', onDragLeave)
+    window.addEventListener('drop', onDrop)
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter)
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragleave', onDragLeave)
+      window.removeEventListener('drop', onDrop)
+    }
+  }, [handleFiles])
+
+  if (!visible) return null
+
+  return (
+    <div className="drop-overlay">
+      <div className="drop-overlay-card">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+        <span>Drop images here</span>
+      </div>
+    </div>
+  )
+}
 
 function AppContent() {
   const { theme, toggleTheme } = useTheme()
@@ -10,6 +77,7 @@ function AppContent() {
 
   return (
     <div className="app-shell">
+      <DropOverlay />
       <header className="app-header">
         <h1 className="app-logo">InstaPhotoGen</h1>
         <div className="header-actions">
