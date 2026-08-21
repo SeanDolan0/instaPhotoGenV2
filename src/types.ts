@@ -74,4 +74,5 @@ export interface ImageEntry {
   file: File
   img: HTMLImageElement
   metadata: Partial<NormalizedMetadata>
+  carouselSlides: number
 }

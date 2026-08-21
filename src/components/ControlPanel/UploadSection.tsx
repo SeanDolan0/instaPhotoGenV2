@@ -15,7 +15,7 @@ export default function UploadSection() {
       files.map(async (file) => {
         try {
           const [img, metadata] = await Promise.all([loadImage(file), extractMetadata(file)])
-          return { id: crypto.randomUUID(), file, img, metadata }
+          return { id: crypto.randomUUID(), file, img, metadata, carouselSlides: 0 }
         } catch { return null }
       }),
     )

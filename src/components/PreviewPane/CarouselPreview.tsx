@@ -16,7 +16,7 @@ export default function CarouselPreview() {
     const image = images[selectedImageIdx]
     if (!image) return
 
-    const slides = settings.carouselSlides
+    const slides = image.carouselSlides
     if (slides < 2) return
 
     try {

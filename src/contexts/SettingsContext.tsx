@@ -160,6 +160,7 @@ interface SettingsContextValue {
   images: ImageEntry[]
   addImages: (entries: ImageEntry[]) => void
   removeImage: (id: string) => void
+  setImageCarousel: (id: string, slides: number) => void
   clearImages: () => void
   selectedImageIdx: number
   setSelectedImageIdx: (idx: number) => void
@@ -193,6 +194,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setImages(prev => prev.filter(img => img.id !== id))
   }, [])
 
+  const setImageCarousel = useCallback((id: string, slides: number) => {
+    setImages(prev => prev.map(img => img.id === id ? { ...img, carouselSlides: slides } : img))
+  }, [])
+
   const clearImages = useCallback(() => {
     setImages([])
     setSelectedImageIdx(0)
@@ -205,6 +210,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       images,
       addImages,
       removeImage,
+      setImageCarousel,
       clearImages,
       selectedImageIdx,
       setSelectedImageIdx,

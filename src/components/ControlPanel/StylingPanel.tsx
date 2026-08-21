@@ -5,7 +5,8 @@ import styles from '../../styles/ControlPanel.module.css'
 const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'Source Serif 4']
 
 export default function StylingPanel() {
-  const { settings, settingsDispatch } = useSettings()
+  const { settings, settingsDispatch, images, selectedImageIdx, setImageCarousel } = useSettings()
+  const currentImage = images[selectedImageIdx]
   const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleColorChange(key: 'textColor' | 'backgroundColor', value: string) {
@@ -20,8 +21,11 @@ export default function StylingPanel() {
       <label className={styles.fieldRow}>
         <span>Carousel</span>
         <select
-          value={settings.carouselSlides}
-          onChange={e => settingsDispatch({ type: 'SET_CAROUSEL_SLIDES', payload: Number(e.target.value) })}
+          value={currentImage?.carouselSlides ?? 0}
+          onChange={e => {
+            if (currentImage) setImageCarousel(currentImage.id, Number(e.target.value))
+          }}
+          disabled={!currentImage}
         >
           <option value={0}>Off</option>
           <option value={2}>2 slides</option>

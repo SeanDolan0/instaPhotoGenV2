@@ -10,20 +10,20 @@ import styles from '../../styles/PreviewPane.module.css'
 export default function PreviewPane() {
   const { settings, images, selectedImageIdx } = useSettings()
   const { theme } = useTheme()
-  const isCarousel = settings.carouselSlides >= 2
+  const currentImage = images[selectedImageIdx]
+  const isCarousel = (currentImage?.carouselSlides ?? 0) >= 2
 
   async function handleExport() {
-    const image = images[selectedImageIdx]
-    if (!image) return
+    if (!currentImage) return
 
-    const baseName = image.file.name.replace(/\.[^.]+$/, '')
+    const baseName = currentImage.file.name.replace(/\.[^.]+$/, '')
 
     if (isCarousel) {
-      const panorama = renderCarousel(image.img, settings.exportTarget, settings)
-      const slices = sliceCarousel(panorama, settings.carouselSlides)
+      const panorama = renderCarousel(currentImage.img, settings.exportTarget, settings)
+      const slices = sliceCarousel(panorama, currentImage.carouselSlides)
       await exportCarouselBatch(slices, settings.exportConfig, baseName)
     } else {
-      const canvas = renderCanvas(image.img, settings.exportTarget, settings, theme)
+      const canvas = renderCanvas(currentImage.img, settings.exportTarget, settings, theme)
       exportSingle(canvas, settings.exportConfig, baseName)
     }
   }
@@ -33,15 +33,15 @@ export default function PreviewPane() {
       <div className={styles.header}>
         <h2 className={styles.title}>Preview</h2>
         <div className={styles.actions}>
-          {images[selectedImageIdx] && (
-            <span className={styles.filename}>{images[selectedImageIdx].file.name}</span>
+          {currentImage && (
+            <span className={styles.filename}>{currentImage.file.name}</span>
           )}
           <button
             className={styles.downloadBtn}
             onClick={handleExport}
             disabled={!images.length}
           >
-            {isCarousel ? `Download ${settings.carouselSlides} slides` : 'Download'}
+            {isCarousel ? `Download ${currentImage.carouselSlides} slides` : 'Download'}
           </button>
         </div>
       </div>
