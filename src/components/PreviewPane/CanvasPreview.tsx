@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSettings } from '../../contexts/SettingsContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { renderCanvas } from '../../lib/renderer'
@@ -8,19 +8,38 @@ export default function CanvasPreview() {
   const { settings, images, selectedImageIdx } = useSettings()
   const { theme } = useTheme()
   const containerRef = useRef<HTMLDivElement>(null)
+  const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null)
+
+  // Preload logo image when data URL changes
+  useEffect(() => {
+    const dataUrl = settings.branding.logoDataUrl
+    if (!dataUrl) {
+      setLogoImg(null)
+      return
+    }
+    const img = new Image()
+    img.onload = () => setLogoImg(img)
+    img.src = dataUrl
+  }, [settings.branding.logoDataUrl])
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    // Clear previous canvas
-    container.innerHTML = ''
+    const prev = container.querySelector('canvas')
+    if (prev) prev.remove()
 
     const image = images[selectedImageIdx]
     if (!image) return
 
     try {
-      const canvas = renderCanvas(image.img, settings.exportTarget, image.metadata, settings, theme)
+      const canvas = renderCanvas(
+        image.img,
+        settings.exportTarget,
+        settings,
+        theme,
+        logoImg ?? undefined,
+      )
       canvas.style.maxWidth = '100%'
       canvas.style.height = 'auto'
       canvas.style.borderRadius = '4px'
@@ -29,7 +48,7 @@ export default function CanvasPreview() {
     } catch (e) {
       console.error('Render failed', e)
     }
-  }, [settings, images, selectedImageIdx, theme])
+  }, [settings, images, selectedImageIdx, theme, logoImg])
 
   if (!images.length) {
     return (

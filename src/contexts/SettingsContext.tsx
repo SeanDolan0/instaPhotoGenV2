@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from 'react'
-import { useLocalStorage } from '../hooks/useLocalStorage'
-import type { AppSettings, ImageEntry, MetadataFieldConfig } from '../types'
+import { createContext, useCallback, useContext, useEffect, useReducer, useState, type ReactNode } from 'react'
+import type { AppSettings, ExportConfig, ImageEntry, MetadataFieldConfig } from '../types'
+
+const STORAGE_KEY = 'ipg-settings'
 
 const DEFAULT_SETTINGS: AppSettings = {
   exportTarget: { type: 'preset', key: 'ig-portrait' },
@@ -22,9 +23,32 @@ const DEFAULT_SETTINGS: AppSettings = {
   metadataText: '',
   metadataTextRight: '',
   fontFamily: 'Inter',
-  spacing: { textSize: 32, textOffsetY: 32, xInset: 32, photoScale: 100, textColor: '#0f172a' },
-  darkMode: false,
-  branding: { enabled: false, text: '', position: 'bottom-right', logo: null },
+  spacing: { textSize: 32, textOffsetY: 32, xInset: 32, photoScale: 100, textColor: '#0f172a', backgroundColor: '#ffffff', lineHeight: 1.3 },
+  branding: { enabled: false, text: '', position: 'bottom-right', logoDataUrl: '', logoHeight: 40 },
+  exportConfig: { format: 'png', jpegQuality: 92 },
+  carouselSlides: 0,
+}
+
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return DEFAULT_SETTINGS
+    const parsed = JSON.parse(raw) as AppSettings
+    // Migrate: strip legacy __linebreak_right__, ensure `side` on all fields, add new defaults
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      metadataFields: parsed.metadataFields
+        .filter((f: MetadataFieldConfig) => f.key !== '__linebreak_right__')
+        .map((f: MetadataFieldConfig) => ({ ...f, side: f.side || 'left' })),
+      spacing: { ...DEFAULT_SETTINGS.spacing, ...parsed.spacing },
+      branding: { ...DEFAULT_SETTINGS.branding, ...parsed.branding },
+      exportConfig: { ...DEFAULT_SETTINGS.exportConfig, ...parsed.exportConfig },
+      carouselSlides: parsed.carouselSlides ?? 0,
+    }
+  } catch {
+    return DEFAULT_SETTINGS
+  }
 }
 
 type SettingsAction =
@@ -37,6 +61,12 @@ type SettingsAction =
   | { type: 'SET_FONT'; payload: string }
   | { type: 'SET_SPACING'; payload: Partial<AppSettings['spacing']> }
   | { type: 'SET_BRANDING'; payload: Partial<AppSettings['branding']> }
+  | { type: 'SET_EXPORT_CONFIG'; payload: Partial<ExportConfig> }
+  | { type: 'ADD_CUSTOM_FIELD'; payload: { side: 'left' | 'right' } }
+  | { type: 'UPDATE_CUSTOM_FIELD'; payload: { key: string; label: string } }
+  | { type: 'REMOVE_CUSTOM_FIELD'; payload: string }
+  | { type: 'LOAD_PRESET'; payload: AppSettings }
+  | { type: 'SET_CAROUSEL_SLIDES'; payload: number }
 
 function settingsReducer(state: AppSettings, action: SettingsAction): AppSettings {
   switch (action.type) {
@@ -68,6 +98,29 @@ function settingsReducer(state: AppSettings, action: SettingsAction): AppSetting
       return { ...state, spacing: { ...state.spacing, ...action.payload } }
     case 'SET_BRANDING':
       return { ...state, branding: { ...state.branding, ...action.payload } }
+    case 'SET_EXPORT_CONFIG':
+      return { ...state, exportConfig: { ...state.exportConfig, ...action.payload } }
+    case 'ADD_CUSTOM_FIELD': {
+      const id = `__custom:${Date.now()}`
+      const newField: MetadataFieldConfig = { key: id, label: '', enabled: true, side: action.payload.side }
+      return { ...state, metadataFields: [...state.metadataFields, newField] }
+    }
+    case 'UPDATE_CUSTOM_FIELD':
+      return {
+        ...state,
+        metadataFields: state.metadataFields.map(f =>
+          f.key === action.payload.key ? { ...f, label: action.payload.label } : f
+        ),
+      }
+    case 'REMOVE_CUSTOM_FIELD':
+      return {
+        ...state,
+        metadataFields: state.metadataFields.filter(f => f.key !== action.payload),
+      }
+    case 'LOAD_PRESET':
+      return { ...action.payload }
+    case 'SET_CAROUSEL_SLIDES':
+      return { ...state, carouselSlides: action.payload }
     default:
       return state
   }
@@ -87,44 +140,34 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue | null>(null)
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [savedSettings] = useLocalStorage('ipg-settings', DEFAULT_SETTINGS)
-  // Migrate old settings that lack `side` on metadata fields, and strip old __linebreak_right__
-  const migrated = {
-    ...savedSettings,
-    metadataFields: savedSettings.metadataFields
-      .filter(f => f.key !== '__linebreak_right__')
-      .map(f => ({ ...f, side: (f as MetadataFieldConfig).side || 'left' })),
-  }
-  const [settings, settingsDispatch] = useReducer(settingsReducer, migrated)
+  const [settings, settingsDispatch] = useReducer(settingsReducer, undefined, loadSettings)
   const [images, setImages] = useState<ImageEntry[]>([])
   const [selectedImageIdx, setSelectedImageIdx] = useState(0)
 
-  // Clamp selectedImageIdx when images shrink (e.g. after removal)
+  // Persist settings to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+    } catch { /* quota exceeded */ }
+  }, [settings])
+
+  // Clamp selectedImageIdx when images shrink
   useEffect(() => {
     setSelectedImageIdx(prev => Math.min(prev, Math.max(0, images.length - 1)))
   }, [images.length])
 
-  // Sync settings changes to localStorage after each dispatch
-  const prevRef = { current: settings }
-  prevRef.current = settings
-  const synced = useLocalStorage('ipg-settings', DEFAULT_SETTINGS)
-  // We sync by writing on each render via the settings state
-  if (synced[0] !== settings) {
-    synced[1](settings)
-  }
-
-  const addImages = (entries: ImageEntry[]) => {
+  const addImages = useCallback((entries: ImageEntry[]) => {
     setImages(prev => [...prev, ...entries])
-  }
+  }, [])
 
-  const removeImage = (id: string) => {
+  const removeImage = useCallback((id: string) => {
     setImages(prev => prev.filter(img => img.id !== id))
-  }
+  }, [])
 
-  const clearImages = () => {
+  const clearImages = useCallback(() => {
     setImages([])
     setSelectedImageIdx(0)
-  }
+  }, [])
 
   return (
     <SettingsContext.Provider value={{

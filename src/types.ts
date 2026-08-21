@@ -5,14 +5,6 @@ export interface MetadataFieldConfig {
   side: 'left' | 'right'
 }
 
-export interface ExportPresetEntry {
-  key: string
-  label: string
-  group: string
-  width: number
-  height: number
-}
-
 export type ExportTarget =
   | { type: 'preset'; key: string }
   | { type: 'custom'; dimensions: { width: number; height: number } }
@@ -23,24 +15,33 @@ export interface SpacingConfig {
   xInset: number
   photoScale: number
   textColor: string
+  backgroundColor: string
+  lineHeight: number
 }
 
 export interface BrandingConfig {
   enabled: boolean
   text: string
   position: 'bottom-left' | 'bottom-right'
-  logo: string | null
+  logoDataUrl: string
+  logoHeight: number
+}
+
+export interface ExportConfig {
+  format: 'png' | 'jpeg'
+  jpegQuality: number
 }
 
 export interface AppSettings {
   exportTarget: ExportTarget
+  exportConfig: ExportConfig
   metadataFields: MetadataFieldConfig[]
   metadataText: string
   metadataTextRight: string
   fontFamily: string
   spacing: SpacingConfig
-  darkMode: boolean | 'system'
   branding: BrandingConfig
+  carouselSlides: number // 0 = off, 2-5 = N slides
 }
 
 export interface NormalizedMetadata {

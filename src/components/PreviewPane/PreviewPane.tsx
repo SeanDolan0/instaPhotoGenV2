@@ -1,20 +1,31 @@
 import { useSettings } from '../../contexts/SettingsContext'
 import { useTheme } from '../../contexts/ThemeContext'
-import { renderCanvas } from '../../lib/renderer'
-import { exportSingle } from '../../lib/export'
+import { renderCanvas, renderCarousel, sliceCarousel } from '../../lib/renderer'
+import { exportSingle, exportCarouselBatch } from '../../lib/export'
 import CanvasPreview from './CanvasPreview'
+import CarouselPreview from './CarouselPreview'
 import ImageCarousel from './ImageCarousel'
 import styles from '../../styles/PreviewPane.module.css'
 
 export default function PreviewPane() {
   const { settings, images, selectedImageIdx } = useSettings()
   const { theme } = useTheme()
+  const isCarousel = settings.carouselSlides >= 2
 
-  function handleExport() {
+  async function handleExport() {
     const image = images[selectedImageIdx]
     if (!image) return
-    const canvas = renderCanvas(image.img, settings.exportTarget, image.metadata, settings, theme)
-    exportSingle(canvas)
+
+    const baseName = image.file.name.replace(/\.[^.]+$/, '')
+
+    if (isCarousel) {
+      const panorama = renderCarousel(image.img, settings.exportTarget, settings)
+      const slices = sliceCarousel(panorama, settings.carouselSlides)
+      await exportCarouselBatch(slices, settings.exportConfig, baseName)
+    } else {
+      const canvas = renderCanvas(image.img, settings.exportTarget, settings, theme)
+      exportSingle(canvas, settings.exportConfig, baseName)
+    }
   }
 
   return (
@@ -30,11 +41,11 @@ export default function PreviewPane() {
             onClick={handleExport}
             disabled={!images.length}
           >
-            Download
+            {isCarousel ? `Download ${settings.carouselSlides} slides` : 'Download'}
           </button>
         </div>
       </div>
-      <CanvasPreview />
+      {isCarousel ? <CarouselPreview /> : <CanvasPreview />}
       <ImageCarousel />
     </main>
   )

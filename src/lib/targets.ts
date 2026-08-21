@@ -13,6 +13,11 @@ export const EXPORT_PRESETS = [
   { key: 'x-post', label: 'Post', group: 'X (Twitter)', width: 1600, height: 900 },
   { key: 'pin-pin', label: 'Pin', group: 'Pinterest', width: 1000, height: 1500 },
   { key: 'yt-thumb', label: 'Thumbnail', group: 'YouTube', width: 1280, height: 720 },
+  { key: 'threads-post', label: 'Post', group: 'Threads', width: 1080, height: 1350 },
+  { key: 'bsky-post', label: 'Post', group: 'Bluesky', width: 1200, height: 675 },
+  { key: 'mastodon-post', label: 'Post', group: 'Mastodon', width: 1200, height: 675 },
+  { key: 'fb-cover', label: 'Cover', group: 'Facebook', width: 820, height: 312 },
+  { key: 'li-banner', label: 'Banner', group: 'LinkedIn', width: 1584, height: 396 },
 ]
 
 export type ExportPreset = (typeof EXPORT_PRESETS)[number]
@@ -29,11 +34,9 @@ export function getTargetLabel(target: ExportTarget): string {
   return preset ? `${preset.group} — ${preset.label}` : 'Custom'
 }
 
-export function presetsGrouped() {
-  const groups: Record<string, ExportPreset[]> = {}
-  for (const p of EXPORT_PRESETS) {
-    if (!groups[p.group]) groups[p.group] = []
-    groups[p.group].push(p)
-  }
-  return groups
+export function presetsGrouped(): Record<string, ExportPreset[]> {
+  return EXPORT_PRESETS.reduce<Record<string, ExportPreset[]>>((acc, p) => {
+    ;(acc[p.group] ??= []).push(p)
+    return acc
+  }, {})
 }

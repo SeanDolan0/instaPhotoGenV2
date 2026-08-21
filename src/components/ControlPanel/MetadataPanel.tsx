@@ -13,7 +13,6 @@ function composeText(
 
   for (const field of fields) {
     if (field.key.startsWith('__linebreak__')) {
-      // linebreak applies to both left and right text
       if (currentLine.length) {
         lines.push(currentLine.join(' '))
         currentLine.length = 0
@@ -21,6 +20,11 @@ function composeText(
       continue
     }
     if (!field.enabled || field.side !== side) continue
+    // Custom fields output their label as static text
+    if (field.key.startsWith('__custom:')) {
+      if (field.label) currentLine.push(field.label)
+      continue
+    }
     const val = metadata[field.key]
     if (val) currentLine.push(val)
   }
@@ -29,23 +33,32 @@ function composeText(
   return lines.join('\n')
 }
 
-export default function MetadataPanel({ compact }: { compact?: boolean }) {
+export default function MetadataPanel() {
   const { settings, settingsDispatch, images, selectedImageIdx } = useSettings()
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
-  const listRef = useRef<HTMLDivElement>(null)
 
-  // Auto-compose metadata text from enabled fields split by side
+  const editedLeft = useRef(false)
+  const editedRight = useRef(false)
+
+  const fieldsRef = useRef(settings.metadataFields)
+  fieldsRef.current = settings.metadataFields
+
+  const meta = (images[selectedImageIdx]?.metadata ?? {}) as Record<string, string>
+  const composedLeft = composeText(settings.metadataFields, 'left', meta)
+  const composedRight = composeText(settings.metadataFields, 'right', meta)
+
+  const leftText = editedLeft.current ? settings.metadataText : composedLeft
+  const rightText = editedRight.current ? settings.metadataTextRight : composedRight
+
   useEffect(() => {
-    const meta = images[selectedImageIdx]?.metadata ?? ({} as Record<string, string>)
-    const vals = meta as Record<string, string>
-
-    const leftText = composeText(settings.metadataFields, 'left', vals)
-    const rightText = composeText(settings.metadataFields, 'right', vals)
-
-    settingsDispatch({ type: 'SET_METADATA_TEXT', payload: leftText })
-    settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: rightText })
-  }, [settings.metadataFields, images, selectedImageIdx])
+    if (!editedLeft.current) {
+      settingsDispatch({ type: 'SET_METADATA_TEXT', payload: composedLeft })
+    }
+    if (!editedRight.current) {
+      settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: composedRight })
+    }
+  }, [composedLeft, composedRight])
 
   function handleDragStart(idx: number) {
     setDragIdx(idx)
@@ -88,7 +101,6 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
     settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
   }
 
-  // --- Touch drag: long-press to start, scroll normally otherwise ---
   const longPressMs = 100
   const scrollCancelPx = 10
   const touchRef = useRef<{
@@ -98,14 +110,12 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
   } | null>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Non-passive touchmove listener — only prevents scroll while actively dragging
   const touchMoveFnRef = useRef<(e: TouchEvent) => void>(() => {})
 
   touchMoveFnRef.current = (e: TouchEvent) => {
     const t = touchRef.current
     if (!t) return
 
-    // Not in drag mode — check if scrolling cancelled the long press
     if (!t.dragging) {
       if (Math.abs(e.touches[0].clientY - t.startY) > scrollCancelPx) {
         if (longPressTimer.current) {
@@ -114,24 +124,23 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
         }
         touchRef.current = null
       }
-      return // let browser scroll normally
+      return
     }
 
-    // Drag mode — swallow the move to prevent scroll
     e.preventDefault()
 
     const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
     const item = el?.closest<HTMLElement>('[data-meta-idx]')
     if (!item) return
-    const overIdx = Number(item.dataset.metaIdx)
-    if (isNaN(overIdx) || overIdx === t.startIdx) return
+    const over = Number(item.dataset.metaIdx)
+    if (isNaN(over) || over === t.startIdx) return
 
-    setOverIdx(overIdx)
-    const fields = [...settings.metadataFields]
-    const [moved] = fields.splice(t.startIdx, 1)
-    fields.splice(overIdx, 0, moved)
-    settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: fields })
-    touchRef.current = { startIdx: overIdx, startY: t.startY, dragging: true }
+    setOverIdx(over)
+    const currentFields = [...fieldsRef.current]
+    const [moved] = currentFields.splice(t.startIdx, 1)
+    currentFields.splice(over, 0, moved)
+    settingsDispatch({ type: 'REORDER_METADATA_FIELDS', payload: currentFields })
+    touchRef.current = { startIdx: over, startY: t.startY, dragging: true }
   }
 
   useEffect(() => {
@@ -141,11 +150,10 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
   }, [])
 
   function handleTouchStart(e: React.TouchEvent, idx: number) {
-    if ((e.target as HTMLElement).closest('button')) return
+    if ((e.target as HTMLElement).closest('button, input')) return
 
     touchRef.current = { startIdx: idx, startY: e.touches[0].clientY, dragging: false }
 
-    // Start long-press timer
     longPressTimer.current = setTimeout(() => {
       longPressTimer.current = null
       if (!touchRef.current || touchRef.current.dragging) return
@@ -173,13 +181,19 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
     })
   }
 
+  const isCustom = (key: string) => key.startsWith('__custom:')
+  const isLinebreak = (key: string) => key.startsWith('__linebreak__')
+
   function renderField(field: MetadataFieldConfig, idx: number, sideLabel: string) {
+    const custom = isCustom(field.key)
+    const linebreak = isLinebreak(field.key)
+
     return (
       <div
         key={field.key}
         data-meta-idx={idx}
         className={`${styles.metaItem} ${dragIdx === idx ? styles.metaDragging : ''} ${overIdx === idx ? styles.metaOver : ''}`}
-        draggable
+        draggable={!custom}
         onDragStart={() => handleDragStart(idx)}
         onDragOver={e => handleDragOver(e, idx)}
         onDragEnd={handleDragEnd}
@@ -187,8 +201,20 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
         onTouchStart={e => handleTouchStart(e, idx)}
         onTouchEnd={handleTouchEnd}
       >
-        {field.key.startsWith('__linebreak__') ? (
+        {linebreak ? (
           <span className={styles.lineBreak} />
+        ) : custom ? (
+          <label className={styles.metaLabel}>
+            <input
+              type="text"
+              value={field.label}
+              placeholder="Custom text..."
+              onChange={e => settingsDispatch({ type: 'UPDATE_CUSTOM_FIELD', payload: { key: field.key, label: e.target.value } })}
+              className={styles.brandInput}
+              style={{ flex: 1, minWidth: 0, padding: '3px 6px', fontSize: '0.8rem' }}
+            />
+            <span className={styles.dragHandle}>⠿</span>
+          </label>
         ) : (
           <label className={styles.metaLabel}>
             <input
@@ -200,20 +226,33 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
             <span className={styles.dragHandle}>⠿</span>
           </label>
         )}
-        {!field.key.startsWith('__linebreak__') && (
+        {!linebreak && (
           <>
-            <button
-              className={styles.reorderBtn}
-              onClick={() => handleMoveUp(idx)}
-              title="Move up"
-              aria-label="Move up"
-            >▲</button>
-            <button
-              className={styles.reorderBtn}
-              onClick={() => handleMoveDown(idx)}
-              title="Move down"
-              aria-label="Move down"
-            >▼</button>
+            {custom && (
+              <button
+                className={styles.reorderBtn}
+                style={{ opacity: 1, color: '#c87070' }}
+                onClick={() => settingsDispatch({ type: 'REMOVE_CUSTOM_FIELD', payload: field.key })}
+                title="Remove"
+                aria-label="Remove custom field"
+              >×</button>
+            )}
+            {!custom && (
+              <>
+                <button
+                  className={styles.reorderBtn}
+                  onClick={() => handleMoveUp(idx)}
+                  title="Move up"
+                  aria-label="Move up"
+                >▲</button>
+                <button
+                  className={styles.reorderBtn}
+                  onClick={() => handleMoveDown(idx)}
+                  title="Move down"
+                  aria-label="Move down"
+                >▼</button>
+              </>
+            )}
             <button
               className={styles.sideBtn}
               onClick={() => handleSideToggle(field.key)}
@@ -229,13 +268,17 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
 
   return (
     <>
-      {!compact && <h3 className={styles.sectionTitle}>Metadata Fields</h3>}
       <span className={styles.sideLabel}>Left</span>
-      <div ref={listRef} className={styles.metaList}>
+      <div className={styles.metaList}>
         {settings.metadataFields
           .filter(f => f.side === 'left')
           .map(field => renderField(field, settings.metadataFields.indexOf(field), 'right'))}
       </div>
+      <button
+        className={styles.reorderBtn}
+        style={{ opacity: 1, alignSelf: 'flex-start', fontSize: '0.75rem', padding: '4px 8px', marginTop: 4 }}
+        onClick={() => settingsDispatch({ type: 'ADD_CUSTOM_FIELD', payload: { side: 'left' } })}
+      >+ Add Line</button>
 
       <div className={styles.sectionDivider} />
 
@@ -245,17 +288,28 @@ export default function MetadataPanel({ compact }: { compact?: boolean }) {
           .filter(f => f.side === 'right')
           .map(field => renderField(field, settings.metadataFields.indexOf(field), 'left'))}
       </div>
+      <button
+        className={styles.reorderBtn}
+        style={{ opacity: 1, alignSelf: 'flex-start', fontSize: '0.75rem', padding: '4px 8px', marginTop: 4 }}
+        onClick={() => settingsDispatch({ type: 'ADD_CUSTOM_FIELD', payload: { side: 'right' } })}
+      >+ Add Line</button>
 
       <textarea
         placeholder="Left text — auto-populates from EXIF. Edit freely."
-        value={settings.metadataText}
-        onChange={e => settingsDispatch({ type: 'SET_METADATA_TEXT', payload: e.target.value })}
+        value={leftText}
+        onChange={e => {
+          editedLeft.current = true
+          settingsDispatch({ type: 'SET_METADATA_TEXT', payload: e.target.value })
+        }}
         rows={3}
       />
       <textarea
         placeholder="Right text — auto-populates from EXIF. Edit freely."
-        value={settings.metadataTextRight}
-        onChange={e => settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: e.target.value })}
+        value={rightText}
+        onChange={e => {
+          editedRight.current = true
+          settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: e.target.value })
+        }}
         rows={3}
       />
     </>

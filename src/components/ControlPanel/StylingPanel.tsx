@@ -3,12 +3,24 @@ import styles from '../../styles/ControlPanel.module.css'
 
 const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'Source Serif 4']
 
-export default function StylingPanel({ compact }: { compact?: boolean }) {
+export default function StylingPanel() {
   const { settings, settingsDispatch } = useSettings()
 
   return (
     <>
-      {!compact && <h3 className={styles.sectionTitle}>Styling</h3>}
+      <label className={styles.fieldRow}>
+        <span>Carousel</span>
+        <select
+          value={settings.carouselSlides}
+          onChange={e => settingsDispatch({ type: 'SET_CAROUSEL_SLIDES', payload: Number(e.target.value) })}
+        >
+          <option value={0}>Off</option>
+          <option value={2}>2 slides</option>
+          <option value={3}>3 slides</option>
+          <option value={4}>4 slides</option>
+          <option value={5}>5 slides</option>
+        </select>
+      </label>
 
       <label className={styles.fieldRow}>
         <span>Font</span>
@@ -49,6 +61,20 @@ export default function StylingPanel({ compact }: { compact?: boolean }) {
       </label>
 
       <label className={styles.fieldRow}>
+        <span>Line Spacing</span>
+        <div className={styles.sliderGroup}>
+          <input
+            type="range"
+            min={80}
+            max={300}
+            value={Math.round(settings.spacing.lineHeight * 100)}
+            onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { lineHeight: Number(e.target.value) / 100 } })}
+          />
+          <span className={styles.sliderVal}>{settings.spacing.lineHeight.toFixed(1)}</span>
+        </div>
+      </label>
+
+      <label className={styles.fieldRow}>
         <span>Text Offset Y</span>
         <div className={styles.sliderGroup}>
           <input
@@ -85,6 +111,41 @@ export default function StylingPanel({ compact }: { compact?: boolean }) {
         />
       </label>
 
+      <label className={styles.fieldRow}>
+        <span>Background</span>
+        <input
+          type="color"
+          value={settings.spacing.backgroundColor}
+          onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { backgroundColor: e.target.value } })}
+        />
+      </label>
+
+      <label className={styles.fieldRow}>
+        <span>Export Format</span>
+        <select
+          value={settings.exportConfig.format}
+          onChange={e => settingsDispatch({ type: 'SET_EXPORT_CONFIG', payload: { format: e.target.value as 'png' | 'jpeg' } })}
+        >
+          <option value="png">PNG</option>
+          <option value="jpeg">JPEG</option>
+        </select>
+      </label>
+
+      {settings.exportConfig.format === 'jpeg' && (
+        <label className={styles.fieldRow}>
+          <span>JPEG Quality</span>
+          <div className={styles.sliderGroup}>
+            <input
+              type="range"
+              min={10}
+              max={100}
+              value={settings.exportConfig.jpegQuality}
+              onChange={e => settingsDispatch({ type: 'SET_EXPORT_CONFIG', payload: { jpegQuality: Number(e.target.value) } })}
+            />
+            <span className={styles.sliderVal}>{settings.exportConfig.jpegQuality}%</span>
+          </div>
+        </label>
+      )}
     </>
   )
 }

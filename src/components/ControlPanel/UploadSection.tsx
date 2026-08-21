@@ -4,7 +4,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { loadImage, extractMetadata } from '../../lib/exif'
 import styles from '../../styles/ControlPanel.module.css'
 
-export default function UploadSection({ compact }: { compact?: boolean }) {
+export default function UploadSection() {
   const { addImages, images } = useSettings()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -45,7 +45,6 @@ export default function UploadSection({ compact }: { compact?: boolean }) {
 
   return (
     <>
-      {!compact && <h3 className={styles.sectionTitle}>Photos</h3>}
       <div
         className={`${styles.dropZone} ${dragging ? styles.dropZoneActive : ''}`}
         onDrop={onDrop}

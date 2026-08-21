@@ -3,7 +3,7 @@ import { useSettings } from '../../contexts/SettingsContext'
 import { presetsGrouped } from '../../lib/targets'
 import styles from '../../styles/ControlPanel.module.css'
 
-export default function ExportTargetSelect({ compact }: { compact?: boolean }) {
+export default function ExportTargetSelect() {
   const { settings, settingsDispatch } = useSettings()
   const [custom, setCustom] = useState(
     settings.exportTarget.type === 'custom'
@@ -11,18 +11,11 @@ export default function ExportTargetSelect({ compact }: { compact?: boolean }) {
       : { width: 1920, height: 1080 },
   )
 
-  function aspectRatio(w: number, h: number): string {
-    const g = (a: number, b: number): number => b === 0 ? a : g(b, a % b)
-    const d = g(w, h)
-    return `${w / d}:${h / d}`
-  }
-
   const groups = presetsGrouped()
   const isCustom = settings.exportTarget.type === 'custom'
 
   return (
     <>
-      {!compact && <h3 className={styles.sectionTitle}>Export Target</h3>}
       <select
         value={settings.exportTarget.type === 'preset' ? settings.exportTarget.key : '__custom__'}
         onChange={e => {
@@ -36,7 +29,7 @@ export default function ExportTargetSelect({ compact }: { compact?: boolean }) {
         {Object.entries(groups).map(([group, presets]) => (
           <optgroup key={group} label={group}>
             {presets.map(p => (
-              <option key={p.key} value={p.key}>{p.label} — {aspectRatio(p.width, p.height)}</option>
+              <option key={p.key} value={p.key}>{p.label}</option>
             ))}
           </optgroup>
         ))}

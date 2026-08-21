@@ -11,7 +11,7 @@ npm run preview   # Preview production build locally
 npm run deploy    # Deploy dist/ to GitHub Pages via gh-pages
 ```
 
-No test runner or test dependencies in package.json.
+No test runner or test dependencies in package.json. No linting configured.
 
 ## Stack & Dependencies
 
@@ -113,18 +113,16 @@ The textarea is editable — user overrides are preserved because the `useEffect
 
 ### 4. Canvas Rendering (`renderer.ts`)
 
-`renderCanvas()` creates a new `<canvas>` element sized to the **larger** of (native image resolution, target aspect ratio). This means:
-- Images are never scaled down (full quality preserved)
-- Canvas expands width or height to match the target ratio
-- Padding is filled with white background
-- The `photoScale` setting (<100%) can shrink the drawn image within the canvas, creating a white border
+Two rendering modes:
 
-Rendering order:
+**Standard mode** (`renderCanvas()`): Creates a new `<canvas>` element sized to the **larger** of (native image resolution, target aspect ratio). Images are never scaled down; canvas expands to match the target ratio; padding filled with white. The `photoScale` setting (<100%) shrinks the drawn image within the canvas, creating a white border. Rendering order:
 1. White background (full canvas)
 2. Photo image (centered, at `photoScale` of native resolution)
 3. Left-side metadata text (below photo, left-aligned)
 4. Right-side metadata text (below photo, right-aligned)
 5. Branding/watermark (only in margin area below the photo, never overlapping it)
+
+**Carousel mode** (`renderCarouselCanvas()`): Renders multiple photos side-by-side with uniform white borders on all sides. Used for the horizontal carousel export feature. Canvas width = sum of individual photo widths + gaps; height = tallest photo height.
 
 `renderAllImages()` calls `renderCanvas()` for each image in a batch.
 

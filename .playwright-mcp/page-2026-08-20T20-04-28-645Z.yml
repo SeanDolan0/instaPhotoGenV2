@@ -1,0 +1,29 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "InstaPhotoGen" [level=1] [ref=e5]
+    - button "Switch to dark mode" [ref=e7] [cursor=pointer]
+  - generic [ref=e10]:
+    - complementary [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - button "Photos −" [expanded] [ref=e14] [cursor=pointer]:
+            - generic [ref=e15]: Photos
+            - generic [ref=e16]: −
+          - button "Drop images here or click to browse" [ref=e18] [cursor=pointer]
+        - button "Export Target +" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: Export Target
+          - generic [ref=e22]: +
+        - button "Metadata Fields +" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: Metadata Fields
+          - generic [ref=e26]: +
+        - button "Styling +" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: Styling
+          - generic [ref=e30]: +
+        - button "Branding +" [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]: Branding
+          - generic [ref=e34]: +
+    - main [ref=e35]:
+      - generic [ref=e36]:
+        - heading "Preview" [level=2] [ref=e37]
+        - button "Download" [disabled] [ref=e39]
+      - paragraph [ref=e41]: Upload an image to get started
