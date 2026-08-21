@@ -186,6 +186,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const addImages = useCallback((entries: ImageEntry[]) => {
     setImages(prev => [...prev, ...entries])
+    settingsDispatch({ type: 'SET_CAROUSEL_SLIDES', payload: 0 })
   }, [])
 
   const removeImage = useCallback((id: string) => {
