@@ -1,41 +1,42 @@
 # InstaPhotoGen
 
-A browser-based photo metadata overlay tool for photographers. Upload images, select which EXIF fields to display, and export styled photos ready for social media — all client-side, no uploads to any server.
+A client-side photo metadata overlay tool for photographers. Upload images, customize which EXIF fields to display, and export styled photos ready for social media — no server, no uploads.
 
 ## Features
 
-- **Drag-and-drop** image upload (supports JPEG, PNG, WebP, TIFF)
-- **EXIF metadata extraction** — camera, lens, aperture, shutter speed, ISO, focal length, and more
-- **Left/right text layout** — assign metadata fields to either side of the image
-- **Auto-compose text** — toggling fields auto-generates the text, or type your own
-- **Canvas rendering** — preserves full image resolution, no downscaling
-- **Export presets** — Instagram (portrait, square, story), TikTok, Facebook, LinkedIn, X/Twitter, Pinterest, YouTube thumbnail
-- **Batch export** — download multiple images as a ZIP
-- **Dark mode**
+- Drag-and-drop upload (JPEG, PNG, WebP, TIFF)
+- EXIF extraction — camera, lens, aperture, shutter speed, ISO, focal length, and more
+- Left/right text layout with drag-to-reorder
+- Auto-composed metadata text or manual edit
+- Full-resolution canvas rendering — images are never downscaled
+- Export presets — Instagram, TikTok, Facebook, LinkedIn, X/Twitter, Pinterest, YouTube
+- Carousel mode — multi-slide panorama export
+- Batch ZIP export
+- Dark mode
 
-## Quick Start
+## Getting Started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
+Open `http://localhost:5173`.
 
 ## Build & Deploy
 
 ```bash
 npm run build    # Production build → dist/
-npm run preview  # Preview the production build locally
+npm run preview  # Preview production build locally
 npm run deploy   # Publish to GitHub Pages
 ```
 
-## Stack
+## Tech Stack
 
-- **Vite** + **React 18** + **TypeScript**
-- **Canvas 2D** — no canvas library dependencies
-- **ExifReader** — client-side EXIF extraction
-- **JSZip** — batch export
+- Vite + React 18 + TypeScript
+- Canvas 2D (no library dependencies)
+- ExifReader (client-side EXIF extraction)
+- JSZip (batch export)
 
 ## License
 
