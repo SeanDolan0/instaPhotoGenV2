@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useSettings } from '../../contexts/SettingsContext'
 import styles from '../../styles/ControlPanel.module.css'
 
@@ -5,6 +6,14 @@ const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'So
 
 export default function StylingPanel() {
   const { settings, settingsDispatch } = useSettings()
+  const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleColorChange(key: 'textColor' | 'backgroundColor', value: string) {
+    if (colorTimerRef.current) clearTimeout(colorTimerRef.current)
+    colorTimerRef.current = setTimeout(() => {
+      settingsDispatch({ type: 'SET_SPACING', payload: { [key]: value } })
+    }, 150)
+  }
 
   return (
     <>
@@ -107,7 +116,7 @@ export default function StylingPanel() {
         <input
           type="color"
           value={settings.spacing.textColor}
-          onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { textColor: e.target.value } })}
+          onChange={e => handleColorChange('textColor', e.target.value)}
         />
       </label>
 
@@ -116,7 +125,7 @@ export default function StylingPanel() {
         <input
           type="color"
           value={settings.spacing.backgroundColor}
-          onChange={e => settingsDispatch({ type: 'SET_SPACING', payload: { backgroundColor: e.target.value } })}
+          onChange={e => handleColorChange('backgroundColor', e.target.value)}
         />
       </label>
 
