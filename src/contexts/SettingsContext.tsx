@@ -69,6 +69,12 @@ type SettingsAction =
   | { type: 'REMOVE_CUSTOM_FIELD'; payload: string }
   | { type: 'LOAD_PRESET'; payload: AppSettings }
   | { type: 'SET_CAROUSEL_SLIDES'; payload: number }
+  | { type: 'SET_LOCATION_TEXT'; payload: string }
+  | { type: 'SET_LOCATION_FORMAT'; payload: 'name' | 'coordinates' | 'both' }
+  | { type: 'SET_LOCATION_COORDS'; payload: { lat: number; lng: number } }
+  | { type: 'SET_LOCATION_SIDE'; payload: 'left' | 'right' }
+  | { type: 'SET_LOCATION_PER_PHOTO'; payload: { imageId: string; text: string } }
+  | { type: 'CLEAR_LOCATION_PER_PHOTO'; payload: string }
 
 function settingsReducer(state: AppSettings, action: SettingsAction): AppSettings {
   switch (action.type) {
@@ -123,6 +129,26 @@ function settingsReducer(state: AppSettings, action: SettingsAction): AppSetting
       return { ...action.payload }
     case 'SET_CAROUSEL_SLIDES':
       return { ...state, carouselSlides: action.payload }
+    case 'SET_LOCATION_TEXT':
+      return { ...state, location: { ...state.location, text: action.payload } }
+    case 'SET_LOCATION_FORMAT':
+      return { ...state, location: { ...state.location, format: action.payload } }
+    case 'SET_LOCATION_COORDS':
+      return { ...state, location: { ...state.location, lat: action.payload.lat, lng: action.payload.lng } }
+    case 'SET_LOCATION_SIDE':
+      return { ...state, location: { ...state.location, side: action.payload } }
+    case 'SET_LOCATION_PER_PHOTO':
+      return {
+        ...state,
+        location: {
+          ...state.location,
+          perPhoto: { ...state.location.perPhoto, [action.payload.imageId]: action.payload.text },
+        },
+      }
+    case 'CLEAR_LOCATION_PER_PHOTO': {
+      const { [action.payload]: _, ...rest } = state.location.perPhoto
+      return { ...state, location: { ...state.location, perPhoto: rest } }
+    }
     default:
       return state
   }
