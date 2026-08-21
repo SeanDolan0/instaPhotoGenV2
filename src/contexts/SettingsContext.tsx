@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   branding: { enabled: false, text: '', position: 'bottom-right', logoDataUrl: '', logoHeight: 40 },
   exportConfig: { format: 'png', jpegQuality: 92 },
   carouselSlides: 0,
+  location: { text: '', format: 'name', lat: null, lng: null, side: 'left', perPhoto: {} },
 }
 
 function loadSettings(): AppSettings {
@@ -45,6 +46,7 @@ function loadSettings(): AppSettings {
       branding: { ...DEFAULT_SETTINGS.branding, ...parsed.branding },
       exportConfig: { ...DEFAULT_SETTINGS.exportConfig, ...parsed.exportConfig },
       carouselSlides: parsed.carouselSlides ?? 0,
+      location: { ...DEFAULT_SETTINGS.location, ...parsed.location },
     }
   } catch {
     return DEFAULT_SETTINGS

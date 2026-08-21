@@ -27,6 +27,15 @@ export interface BrandingConfig {
   logoHeight: number
 }
 
+export interface LocationConfig {
+  text: string
+  format: 'name' | 'coordinates' | 'both'
+  lat: number | null
+  lng: number | null
+  side: 'left' | 'right'
+  perPhoto: Record<string, string>
+}
+
 export interface ExportConfig {
   format: 'png' | 'jpeg'
   jpegQuality: number
@@ -42,6 +51,7 @@ export interface AppSettings {
   spacing: SpacingConfig
   branding: BrandingConfig
   carouselSlides: number // 0 = off, 2-5 = N slides
+  location: LocationConfig
 }
 
 export interface NormalizedMetadata {
