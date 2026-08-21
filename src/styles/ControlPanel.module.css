@@ -308,6 +308,50 @@
   border-color: var(--accent);
 }
 
+/* ─── Format Toggle (Location, etc.) ─── */
+.formatToggle {
+  display: flex;
+  gap: 4px;
+}
+
+.formatBtn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.formatBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.formatBtnActive {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.formatBtnActive:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+.overrideIndicator {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ─── Carousel Note ─── */
 .carouselNote {
   font-size: 0.72rem;
