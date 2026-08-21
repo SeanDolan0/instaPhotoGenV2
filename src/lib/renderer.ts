@@ -102,8 +102,8 @@ export function renderCarousel(
   image: HTMLImageElement,
   target: AppSettings['exportTarget'],
   settings: AppSettings,
+  slides: number,
 ): HTMLCanvasElement {
-  const slides = settings.carouselSlides
   const imgW = image.naturalWidth
   const imgH = image.naturalHeight
 

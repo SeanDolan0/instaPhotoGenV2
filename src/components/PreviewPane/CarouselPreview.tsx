@@ -20,7 +20,7 @@ export default function CarouselPreview() {
     if (slides < 2) return
 
     try {
-      const panorama = renderCarousel(image.img, settings.exportTarget, settings)
+      const panorama = renderCarousel(image.img, settings.exportTarget, settings, slides)
       const slices = sliceCarousel(panorama, slides)
 
       slices.forEach((slice, i) => {

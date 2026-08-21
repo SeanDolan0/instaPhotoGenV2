@@ -9,28 +9,28 @@ export default function BatchExport() {
   const { settings, images } = useSettings()
   const { theme } = useTheme()
   const [exporting, setExporting] = useState(false)
-  const isCarousel = settings.carouselSlides >= 2
+  const hasAnyCarousel = images.some(img => img.carouselSlides >= 2)
 
   if (images.length < 2) return null
 
   async function handleExport() {
     setExporting(true)
     try {
-      if (isCarousel) {
-        for (const image of images) {
-          const panorama = renderCarousel(image.img, settings.exportTarget, settings)
-          const slices = sliceCarousel(panorama, settings.carouselSlides)
+      for (const image of images) {
+        if (image.carouselSlides >= 2) {
+          const panorama = renderCarousel(image.img, settings.exportTarget, settings, image.carouselSlides)
+          const slices = sliceCarousel(panorama, image.carouselSlides)
           const baseName = image.file.name.replace(/\.[^.]+$/, '')
           await exportCarouselBatch(slices, settings.exportConfig, baseName)
+        } else {
+          const canvases = renderAllImages([image], settings.exportTarget, settings, theme)
+          const ext = settings.exportConfig.format === 'jpeg' ? 'jpg' : 'png'
+          const items = canvases.map(canvas => ({
+            canvas,
+            filename: `iphoto_${image.file.name.replace(/\.[^.]+$/, '')}.${ext}`,
+          }))
+          await exportBatch(items, settings.exportConfig)
         }
-      } else {
-        const canvases = renderAllImages(images, settings.exportTarget, settings, theme)
-        const ext = settings.exportConfig.format === 'jpeg' ? 'jpg' : 'png'
-        const items = canvases.map((canvas, i) => ({
-          canvas,
-          filename: `iphoto_${images[i]?.file.name.replace(/\.[^.]+$/, '') ?? Date.now()}.${ext}`,
-        }))
-        await exportBatch(items, settings.exportConfig)
       }
     } catch (e) {
       console.error('Batch export failed', e)
@@ -40,8 +40,8 @@ export default function BatchExport() {
 
   const label = exporting
     ? 'Exporting...'
-    : isCarousel
-      ? `Export All (${images.length}×${settings.carouselSlides} slides)`
+    : hasAnyCarousel
+      ? `Export All (${images.length} images)`
       : `Export All (${images.length})`
 
   return (

@@ -19,7 +19,7 @@ export default function PreviewPane() {
     const baseName = currentImage.file.name.replace(/\.[^.]+$/, '')
 
     if (isCarousel) {
-      const panorama = renderCarousel(currentImage.img, settings.exportTarget, settings)
+      const panorama = renderCarousel(currentImage.img, settings.exportTarget, settings, currentImage.carouselSlides)
       const slices = sliceCarousel(panorama, currentImage.carouselSlides)
       await exportCarouselBatch(slices, settings.exportConfig, baseName)
     } else {
