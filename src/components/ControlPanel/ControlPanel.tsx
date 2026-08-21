@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useMetadataText } from '../../hooks/useMetadataText'
 import UploadSection from './UploadSection'
 import ExportTargetSelect from './ExportTargetSelect'
 import MetadataPanel from './MetadataPanel'
@@ -31,6 +32,11 @@ interface ControlPanelProps {
   onClose?: () => void
 }
 
+function MetadataTextSync() {
+  useMetadataText()
+  return null
+}
+
 export default function ControlPanel({ open = false, onClose }: ControlPanelProps) {
   return (
     <aside className={`${styles.panel} ${open ? styles.panelOpen : ''}`}>
@@ -46,6 +52,7 @@ export default function ControlPanel({ open = false, onClose }: ControlPanelProp
         )}
       </div>
       <div className={styles.panelScroll}>
+        <MetadataTextSync />
         <Collapsible title="Photos" defaultOpen>
           <UploadSection />
         </Collapsible>
