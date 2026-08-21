@@ -1,7 +1,31 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { useSettings } from '../../contexts/SettingsContext'
-import type { MetadataFieldConfig } from '../../types'
+import type { AppSettings, MetadataFieldConfig } from '../../types'
 import styles from '../../styles/ControlPanel.module.css'
+
+function formatCoords(lat: number, lng: number): string {
+  const latDir = lat >= 0 ? 'N' : 'S'
+  const lngDir = lng >= 0 ? 'E' : 'W'
+  return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`
+}
+
+function resolveLocationText(
+  location: AppSettings['location'],
+  imageId: string | undefined,
+): string {
+  const raw = imageId && location.perPhoto[imageId]
+    ? location.perPhoto[imageId]
+    : location.text
+  if (!raw && location.lat === null) return ''
+  switch (location.format) {
+    case 'name': return raw
+    case 'coordinates': return location.lat !== null ? formatCoords(location.lat, location.lng!) : ''
+    case 'both': {
+      const coords = location.lat !== null ? formatCoords(location.lat, location.lng!) : ''
+      return [raw, coords].filter(Boolean).join('\n')
+    }
+  }
+}
 
 function composeText(
   fields: MetadataFieldConfig[],
@@ -48,17 +72,29 @@ export default function MetadataPanel() {
   const composedLeft = composeText(settings.metadataFields, 'left', meta)
   const composedRight = composeText(settings.metadataFields, 'right', meta)
 
+  const imageId = images[selectedImageIdx]?.id
+  const locationText = resolveLocationText(settings.location, imageId)
+  const locationSide = settings.location.side
+
   const leftText = editedLeft.current ? settings.metadataText : composedLeft
   const rightText = editedRight.current ? settings.metadataTextRight : composedRight
 
   useEffect(() => {
     if (!editedLeft.current) {
-      settingsDispatch({ type: 'SET_METADATA_TEXT', payload: composedLeft })
+      const base = composedLeft
+      const withLocation = locationSide === 'left' && locationText
+        ? [base, locationText].filter(Boolean).join('\n')
+        : base
+      settingsDispatch({ type: 'SET_METADATA_TEXT', payload: withLocation })
     }
     if (!editedRight.current) {
-      settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: composedRight })
+      const base = composedRight
+      const withLocation = locationSide === 'right' && locationText
+        ? [base, locationText].filter(Boolean).join('\n')
+        : base
+      settingsDispatch({ type: 'SET_METADATA_TEXT_RIGHT', payload: withLocation })
     }
-  }, [composedLeft, composedRight])
+  }, [composedLeft, composedRight, locationText, locationSide])
 
   function handleDragStart(idx: number) {
     setDragIdx(idx)
