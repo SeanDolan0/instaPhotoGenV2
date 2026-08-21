@@ -4,6 +4,7 @@ import ExportTargetSelect from './ExportTargetSelect'
 import MetadataPanel from './MetadataPanel'
 import StylingPanel from './StylingPanel'
 import BrandingPanel from './BrandingPanel'
+import LocationSection from './LocationSection'
 import PresetPanel from './PresetPanel'
 import BatchExport from './BatchExport'
 import styles from '../../styles/ControlPanel.module.css'
@@ -56,6 +57,9 @@ export default function ControlPanel({ open = false, onClose }: ControlPanelProp
         </Collapsible>
         <Collapsible title="Styling">
           <StylingPanel />
+        </Collapsible>
+        <Collapsible title="Location">
+          <LocationSection />
         </Collapsible>
         <Collapsible title="Branding">
           <BrandingPanel />
