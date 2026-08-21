@@ -8,6 +8,7 @@ export default function LocationSection() {
   const { location } = settings
   const [showMap, setShowMap] = useState(false)
   const [overrideActive, setOverrideActive] = useState(false)
+  const [searchTrigger, setSearchTrigger] = useState(0)
 
   const hasMultiple = images.length >= 2
   const currentImageId = images[selectedImageIdx]?.id
@@ -33,13 +34,25 @@ export default function LocationSection() {
 
   return (
     <>
-      <input
-        type="text"
-        value={displayText}
-        onChange={e => handleTextChange(e.target.value)}
-        placeholder="e.g. Kyoto, Japan"
-        className={styles.brandInput}
-      />
+      <div style={{ display: 'flex', gap: 4 }}>
+        <input
+          type="text"
+          value={displayText}
+          onChange={e => handleTextChange(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') setSearchTrigger(n => n + 1) }}
+          placeholder="e.g. Kyoto, Japan"
+          className={styles.brandInput}
+          style={{ flex: 1 }}
+        />
+        <button
+          className={styles.formatBtn}
+          onClick={() => setSearchTrigger(n => n + 1)}
+          title="Search location"
+          style={{ flex: '0 0 auto', padding: '5px 10px' }}
+        >
+          🔍
+        </button>
+      </div>
 
       <div className={styles.formatToggle}>
         {(['name', 'coordinates', 'both'] as const).map(fmt => (
@@ -96,6 +109,8 @@ export default function LocationSection() {
         <LocationMap
           lat={location.lat}
           lng={location.lng}
+          searchText={displayText}
+          searchTrigger={searchTrigger}
           onPick={(lat, lng, name) => {
             settingsDispatch({ type: 'SET_LOCATION_COORDS', payload: { lat, lng } })
             if (name) handleTextChange(name)

@@ -13,10 +13,12 @@ L.Icon.Default.mergeOptions({
 interface LocationMapProps {
   lat: number | null
   lng: number | null
+  searchText: string
+  searchTrigger: number
   onPick: (lat: number, lng: number, name: string) => void
 }
 
-export default function LocationMap({ lat, lng, onPick }: LocationMapProps) {
+export default function LocationMap({ lat, lng, searchText, searchTrigger, onPick }: LocationMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
@@ -72,6 +74,36 @@ export default function LocationMap({ lat, lng, onPick }: LocationMapProps) {
       mapRef.current = null
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Forward-geocode search text → place pin on map (triggered explicitly)
+  useEffect(() => {
+    if (!mapRef.current || searchTrigger === 0 || searchText.length < 3) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchText)}&format=json&limit=1`,
+          { headers: { 'Accept-Language': 'en' } },
+        )
+        const data = await res.json()
+        if (cancelled || !data.length || !mapRef.current) return
+        const { lat: rLat, lon: rLng, display_name } = data[0]
+        const pos = L.latLng(rLat, rLng)
+        if (markerRef.current) {
+          markerRef.current.setLatLng(pos)
+        } else {
+          markerRef.current = L.marker(pos, { draggable: true }).addTo(mapRef.current)
+          markerRef.current.on('dragend', () => {
+            const p = markerRef.current?.getLatLng()
+            if (p) reverseGeocode(p.lat, p.lng)
+          })
+        }
+        mapRef.current.setView(pos, 10)
+        onPick(rLat, rLng, display_name?.split(',').slice(0, 3).join(',') ?? '')
+      } catch { /* network error — ignore */ }
+    })()
+    return () => { cancelled = true }
+  }, [searchTrigger]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function reverseGeocode(rLat: number, rLng: number) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
