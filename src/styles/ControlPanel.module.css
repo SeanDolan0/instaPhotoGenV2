@@ -472,3 +472,13 @@
     padding: 24px 12px;
   }
 }
+
+/* ─── Location Map ─── */
+.locationMap {
+  width: 100%;
+  height: 220px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  margin-top: 8px;
+}
