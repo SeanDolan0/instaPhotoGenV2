@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     { key: 'wb', label: 'White Balance', enabled: false, side: 'left' },
     { key: 'metering', label: 'Metering Mode', enabled: false, side: 'left' },
     { key: 'flash', label: 'Flash', enabled: false, side: 'left' },
+    { key: 'location', label: 'Location', enabled: true, side: 'left' },
     { key: 'date', label: 'Date/Time', enabled: false, side: 'left' },
   ],
   metadataText: '',
@@ -28,6 +29,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   exportConfig: { format: 'png', jpegQuality: 92 },
   carouselSlides: 0,
   location: { text: '', format: 'name', lat: null, lng: null, side: 'left', perPhoto: {} },
+  dateTime: { dateFormat: 'YYYY-MM-DD', timeFormat: '24h', separator: ' ' },
 }
 
 function loadSettings(): AppSettings {
@@ -36,17 +38,22 @@ function loadSettings(): AppSettings {
     if (!raw) return DEFAULT_SETTINGS
     const parsed = JSON.parse(raw) as AppSettings
     // Migrate: strip legacy __linebreak_right__, ensure `side` on all fields, add new defaults
+    let fields = (parsed.metadataFields || DEFAULT_SETTINGS.metadataFields)
+      .filter((f: MetadataFieldConfig) => f.key !== '__linebreak_right__')
+      .map((f: MetadataFieldConfig) => ({ ...f, side: f.side || 'left' }))
+    if (!fields.some((f: MetadataFieldConfig) => f.key === 'location')) {
+      fields.push({ key: 'location', label: 'Location', enabled: true, side: parsed.location?.side || 'left' })
+    }
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
-      metadataFields: parsed.metadataFields
-        .filter((f: MetadataFieldConfig) => f.key !== '__linebreak_right__')
-        .map((f: MetadataFieldConfig) => ({ ...f, side: f.side || 'left' })),
+      metadataFields: fields,
       spacing: { ...DEFAULT_SETTINGS.spacing, ...parsed.spacing },
       branding: { ...DEFAULT_SETTINGS.branding, ...parsed.branding },
       exportConfig: { ...DEFAULT_SETTINGS.exportConfig, ...parsed.exportConfig },
       carouselSlides: parsed.carouselSlides ?? 0,
       location: { ...DEFAULT_SETTINGS.location, ...parsed.location },
+      dateTime: { ...DEFAULT_SETTINGS.dateTime, ...parsed.dateTime },
     }
   } catch {
     return DEFAULT_SETTINGS
@@ -67,6 +74,9 @@ type SettingsAction =
   | { type: 'ADD_CUSTOM_FIELD'; payload: { side: 'left' | 'right' } }
   | { type: 'UPDATE_CUSTOM_FIELD'; payload: { key: string; label: string } }
   | { type: 'REMOVE_CUSTOM_FIELD'; payload: string }
+  | { type: 'ADD_LINEBREAK'; payload: { side: 'left' | 'right' } }
+  | { type: 'REMOVE_LINEBREAK'; payload: string }
+  | { type: 'RESET_METADATA_TEXT'; payload: 'left' | 'right' | 'both' }
   | { type: 'LOAD_PRESET'; payload: AppSettings }
   | { type: 'SET_CAROUSEL_SLIDES'; payload: number }
   | { type: 'SET_LOCATION_TEXT'; payload: string }
@@ -75,9 +85,18 @@ type SettingsAction =
   | { type: 'SET_LOCATION_SIDE'; payload: 'left' | 'right' }
   | { type: 'SET_LOCATION_PER_PHOTO'; payload: { imageId: string; text: string } }
   | { type: 'CLEAR_LOCATION_PER_PHOTO'; payload: string }
+  | { type: 'SET_DATE_TIME'; payload: Partial<NonNullable<AppSettings['dateTime']>> }
 
 function settingsReducer(state: AppSettings, action: SettingsAction): AppSettings {
   switch (action.type) {
+    case 'SET_DATE_TIME':
+      return {
+        ...state,
+        dateTime: {
+          ...(state.dateTime ?? DEFAULT_SETTINGS.dateTime!),
+          ...action.payload,
+        },
+      }
     case 'SET_EXPORT_TARGET':
       return { ...state, exportTarget: action.payload }
     case 'TOGGLE_METADATA_FIELD':
@@ -125,8 +144,48 @@ function settingsReducer(state: AppSettings, action: SettingsAction): AppSetting
         ...state,
         metadataFields: state.metadataFields.filter(f => f.key !== action.payload),
       }
-    case 'LOAD_PRESET':
-      return { ...action.payload }
+    case 'ADD_LINEBREAK': {
+      const id = `__linebreak:${Date.now()}`
+      const newField: MetadataFieldConfig = { key: id, label: '— Line Break —', enabled: true, side: action.payload.side }
+      return { ...state, metadataFields: [...state.metadataFields, newField] }
+    }
+    case 'REMOVE_LINEBREAK':
+      return {
+        ...state,
+        metadataFields: state.metadataFields.filter(f => f.key !== action.payload),
+      }
+    case 'RESET_METADATA_TEXT':
+      return {
+        ...state,
+        metadataText: action.payload === 'right' ? state.metadataText : '',
+        metadataTextRight: action.payload === 'left' ? state.metadataTextRight : '',
+      }
+    case 'LOAD_PRESET': {
+      const p = action.payload
+      let fields = (p.metadataFields || DEFAULT_SETTINGS.metadataFields)
+        .filter((f: MetadataFieldConfig) => f.key !== '__linebreak_right__')
+        .map((f: MetadataFieldConfig) => ({ ...f, side: f.side || 'left' }))
+      if (!fields.some((f: MetadataFieldConfig) => f.key === 'location')) {
+        fields.push({ key: 'location', label: 'Location', enabled: true, side: p.location?.side || 'left' })
+      }
+      return {
+        ...DEFAULT_SETTINGS,
+        ...p,
+        metadataFields: fields,
+        spacing: { ...DEFAULT_SETTINGS.spacing, ...p.spacing },
+        branding: { ...DEFAULT_SETTINGS.branding, ...p.branding },
+        exportConfig: { ...DEFAULT_SETTINGS.exportConfig, ...p.exportConfig },
+        location: {
+          ...DEFAULT_SETTINGS.location,
+          ...p.location,
+          perPhoto: {},
+        },
+        dateTime: {
+          ...DEFAULT_SETTINGS.dateTime,
+          ...p.dateTime,
+        },
+      }
+    }
     case 'SET_CAROUSEL_SLIDES':
       return { ...state, carouselSlides: action.payload }
     case 'SET_LOCATION_TEXT':
@@ -192,6 +251,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const removeImage = useCallback((id: string) => {
     setImages(prev => prev.filter(img => img.id !== id))
+    settingsDispatch({ type: 'CLEAR_LOCATION_PER_PHOTO', payload: id })
   }, [])
 
   const setImageCarousel = useCallback((id: string, slides: number) => {

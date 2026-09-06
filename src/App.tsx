@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { SettingsProvider, useSettings } from './contexts/SettingsContext'
-import { loadImage, extractMetadata } from './lib/exif'
-import type { ImageEntry } from './types'
+import { processImageFiles } from './lib/exif'
 import ControlPanel from './components/ControlPanel/ControlPanel'
 import PreviewPane from './components/PreviewPane/PreviewPane'
 
@@ -12,32 +11,35 @@ function DropOverlay() {
   const counterRef = useRef(0)
 
   const handleFiles = useCallback(async (files: FileList) => {
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
-    if (!imageFiles.length) return
-    const entries = await Promise.all(
-      imageFiles.map(async (file) => {
-        try {
-          const [img, metadata] = await Promise.all([loadImage(file), extractMetadata(file)])
-          return { id: crypto.randomUUID(), file, img, metadata, carouselSlides: 0 }
-        } catch { return null }
-      }),
-    )
-    addImages(entries.filter(Boolean) as ImageEntry[])
+    await processImageFiles(files, (chunk) => addImages(chunk), undefined, 3)
   }, [addImages])
+
+  const isFileDrag = (e: DragEvent) => {
+    return Array.from(e.dataTransfer?.types || []).includes('Files')
+  }
 
   useEffect(() => {
     function onDragEnter(e: DragEvent) {
+      if (!isFileDrag(e)) return
       e.preventDefault()
       counterRef.current++
       if (counterRef.current === 1) setVisible(true)
     }
-    function onDragOver(e: DragEvent) { e.preventDefault() }
+    function onDragOver(e: DragEvent) {
+      if (!isFileDrag(e)) return
+      e.preventDefault()
+    }
     function onDragLeave(e: DragEvent) {
+      if (!isFileDrag(e)) return
       e.preventDefault()
       counterRef.current--
-      if (counterRef.current === 0) setVisible(false)
+      if (counterRef.current <= 0) {
+        counterRef.current = 0
+        setVisible(false)
+      }
     }
     function onDrop(e: DragEvent) {
+      if (!isFileDrag(e)) return
       e.preventDefault()
       counterRef.current = 0
       setVisible(false)

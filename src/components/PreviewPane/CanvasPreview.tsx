@@ -27,7 +27,11 @@ export default function CanvasPreview() {
     if (!container) return
 
     const prev = container.querySelector('canvas')
-    if (prev) prev.remove()
+    if (prev) {
+      prev.width = 0
+      prev.height = 0
+      prev.remove()
+    }
 
     const image = images[selectedImageIdx]
     if (!image) return
@@ -47,6 +51,15 @@ export default function CanvasPreview() {
       container.appendChild(canvas)
     } catch (e) {
       console.error('Render failed', e)
+    }
+
+    return () => {
+      const current = container.querySelector('canvas')
+      if (current) {
+        current.width = 0
+        current.height = 0
+        current.remove()
+      }
     }
   }, [settings, images, selectedImageIdx, theme, logoImg])
 

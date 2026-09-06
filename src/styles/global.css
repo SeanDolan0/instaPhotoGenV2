@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Roboto:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
 
 /* ─── Design Tokens ─── */
 :root,
 [data-theme='light'] {
+  color-scheme: light;
   --bg-primary: #f5f2ed;
   --bg-surface: #ffffff;
   --bg-elevated: #fafaf8;
@@ -20,6 +21,8 @@
   --accent-hover: #85603f;
   --accent-subtle: rgba(155, 109, 74, 0.08);
 
+  --select-arrow: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
   --shadow-sm: 0 1px 2px rgba(26, 25, 23, 0.04);
   --shadow-md: 0 4px 12px rgba(26, 25, 23, 0.06);
   --shadow-lg: 0 8px 32px rgba(26, 25, 23, 0.08);
@@ -32,6 +35,7 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --bg-primary: #1a1917;
   --bg-surface: #242320;
   --bg-elevated: #2c2b28;
@@ -48,6 +52,8 @@
   --accent: #c8956c;
   --accent-hover: #d4a57d;
   --accent-subtle: rgba(200, 149, 108, 0.08);
+
+  --select-arrow: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238a857d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -172,19 +178,25 @@ select {
   padding: 6px 28px 6px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   color: var(--text-primary);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238a857d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 10px center;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 
 select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+select option,
+select optgroup {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 /* Textarea */

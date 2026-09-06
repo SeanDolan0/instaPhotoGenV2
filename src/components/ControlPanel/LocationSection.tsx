@@ -7,18 +7,20 @@ export default function LocationSection() {
   const { settings, settingsDispatch, images, selectedImageIdx } = useSettings()
   const { location } = settings
   const [showMap, setShowMap] = useState(false)
-  const [overrideActive, setOverrideActive] = useState(false)
   const [searchTrigger, setSearchTrigger] = useState(0)
 
   const hasMultiple = images.length >= 2
-  const currentImageId = images[selectedImageIdx]?.id
+  const currentImage = images[selectedImageIdx]
+  const currentImageId = currentImage?.id
+  const hasOverride = Boolean(currentImageId && location.perPhoto[currentImageId] !== undefined)
+  const photoGps = currentImage?.metadata?.gps
 
-  const displayText = overrideActive && currentImageId
-    ? (location.perPhoto[currentImageId] ?? '')
+  const displayText = hasOverride && currentImageId
+    ? location.perPhoto[currentImageId]
     : location.text
 
   function handleTextChange(value: string) {
-    if (overrideActive && currentImageId) {
+    if (hasOverride && currentImageId) {
       settingsDispatch({ type: 'SET_LOCATION_PER_PHOTO', payload: { imageId: currentImageId, text: value } })
     } else {
       settingsDispatch({ type: 'SET_LOCATION_TEXT', payload: value })
@@ -26,10 +28,26 @@ export default function LocationSection() {
   }
 
   function handleOverrideToggle(checked: boolean) {
-    setOverrideActive(checked)
-    if (checked && currentImageId && !location.perPhoto[currentImageId]) {
-      settingsDispatch({ type: 'SET_LOCATION_PER_PHOTO', payload: { imageId: currentImageId, text: location.text } })
+    if (!currentImageId) return
+    if (checked) {
+      settingsDispatch({
+        type: 'SET_LOCATION_PER_PHOTO',
+        payload: { imageId: currentImageId, text: location.text },
+      })
+    } else {
+      settingsDispatch({
+        type: 'CLEAR_LOCATION_PER_PHOTO',
+        payload: currentImageId,
+      })
     }
+  }
+
+  function handleApplyPhotoGps() {
+    if (!photoGps) return
+    settingsDispatch({
+      type: 'SET_LOCATION_COORDS',
+      payload: { lat: photoGps.lat, lng: photoGps.lng },
+    })
   }
 
   return (
@@ -58,6 +76,20 @@ export default function LocationSection() {
           </button>
         )}
       </div>
+
+      {photoGps && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 6px', background: 'var(--accent-subtle)', borderRadius: 'var(--radius-sm)', fontSize: '0.72rem', color: 'var(--accent)' }}>
+          <span>GPS: {photoGps.lat.toFixed(4)}°, {photoGps.lng.toFixed(4)}°</span>
+          <button
+            type="button"
+            className={styles.resetBtn}
+            onClick={handleApplyPhotoGps}
+            title="Set map pin and coordinates to photo EXIF GPS"
+          >
+            Use Photo GPS
+          </button>
+        </div>
+      )}
 
       <div className={styles.formatToggle}>
         {(['name', 'coordinates', 'both'] as const).map(fmt => (
@@ -90,13 +122,13 @@ export default function LocationSection() {
         <label className={styles.metaLabel}>
           <input
             type="checkbox"
-            checked={overrideActive}
+            checked={hasOverride}
             onChange={e => handleOverrideToggle(e.target.checked)}
           />
           <span>Override for selected photo</span>
-          {overrideActive && currentImageId && (
+          {hasOverride && currentImageId && (
             <span className={styles.overrideIndicator}>
-              {images[selectedImageIdx]?.file.name}
+              {currentImage?.file.name}
             </span>
           )}
         </label>

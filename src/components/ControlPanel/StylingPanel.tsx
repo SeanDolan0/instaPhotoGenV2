@@ -1,19 +1,42 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSettings } from '../../contexts/SettingsContext'
 import styles from '../../styles/ControlPanel.module.css'
 
-const FONTS = ['Inter', 'SF Pro', 'Roboto', 'Helvetica', 'Playfair Display', 'Source Serif 4']
+const FONTS = [
+  'Inter',
+  'DM Sans',
+  'DM Mono',
+  'Newsreader',
+  'Playfair Display',
+  'Source Serif 4',
+  'Roboto',
+  'Helvetica',
+  'SF Pro',
+]
 
 export default function StylingPanel() {
   const { settings, settingsDispatch, images, selectedImageIdx, setImageCarousel } = useSettings()
   const currentImage = images[selectedImageIdx]
   const colorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [localTextColor, setLocalTextColor] = useState(settings.spacing.textColor)
+  const [localBgColor, setLocalBgColor] = useState(settings.spacing.backgroundColor)
+
+  useEffect(() => {
+    setLocalTextColor(settings.spacing.textColor)
+  }, [settings.spacing.textColor])
+
+  useEffect(() => {
+    setLocalBgColor(settings.spacing.backgroundColor)
+  }, [settings.spacing.backgroundColor])
 
   function handleColorChange(key: 'textColor' | 'backgroundColor', value: string) {
+    if (key === 'textColor') setLocalTextColor(value)
+    if (key === 'backgroundColor') setLocalBgColor(value)
+
     if (colorTimerRef.current) clearTimeout(colorTimerRef.current)
     colorTimerRef.current = setTimeout(() => {
       settingsDispatch({ type: 'SET_SPACING', payload: { [key]: value } })
-    }, 150)
+    }, 100)
   }
 
   return (
@@ -119,7 +142,7 @@ export default function StylingPanel() {
         <span>Text Color</span>
         <input
           type="color"
-          value={settings.spacing.textColor}
+          value={localTextColor}
           onChange={e => handleColorChange('textColor', e.target.value)}
         />
       </label>
@@ -128,7 +151,7 @@ export default function StylingPanel() {
         <span>Background</span>
         <input
           type="color"
-          value={settings.spacing.backgroundColor}
+          value={localBgColor}
           onChange={e => handleColorChange('backgroundColor', e.target.value)}
         />
       </label>

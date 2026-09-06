@@ -22,15 +22,26 @@ export const EXPORT_PRESETS = [
 
 export type ExportPreset = (typeof EXPORT_PRESETS)[number]
 
-export function getTargetDimensions(target: ExportTarget): { width: number; height: number } {
+export function getTargetDimensions(
+  target: ExportTarget,
+  nativeWidth?: number,
+  nativeHeight?: number,
+): { width: number; height: number } {
+  if (target.type === 'match-photo') {
+    return {
+      width: nativeWidth ?? 1080,
+      height: nativeHeight ?? 1350,
+    }
+  }
   if (target.type === 'custom') return target.dimensions
-  const preset = EXPORT_PRESETS.find(p => p.key === target.key)
+  const preset = EXPORT_PRESETS.find(p => p.key === (target as any).key)
   return preset ?? { width: 1080, height: 1350 }
 }
 
 export function getTargetLabel(target: ExportTarget): string {
+  if (target.type === 'match-photo') return 'Match Photo (Original)'
   if (target.type === 'custom') return `${target.dimensions.width}×${target.dimensions.height}`
-  const preset = EXPORT_PRESETS.find(p => p.key === target.key)
+  const preset = EXPORT_PRESETS.find(p => p.key === (target as any).key)
   return preset ? `${preset.group} — ${preset.label}` : 'Custom'
 }
 

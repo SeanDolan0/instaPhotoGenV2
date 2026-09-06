@@ -86,20 +86,24 @@ export default function LocationMap({ lat, lng, searchText, searchTrigger, onPic
           { headers: { 'Accept-Language': 'en' } },
         )
         const data = await res.json()
-        if (cancelled || !data.length || !mapRef.current) return
+        const map = mapRef.current
+        if (cancelled || !data?.length || !map) return
         const { lat: rLat, lon: rLng, display_name } = data[0]
-        const pos = L.latLng(rLat, rLng)
+        const numLat = parseFloat(rLat)
+        const numLng = parseFloat(rLng)
+        if (isNaN(numLat) || isNaN(numLng)) return
+        const pos = L.latLng(numLat, numLng)
         if (markerRef.current) {
           markerRef.current.setLatLng(pos)
         } else {
-          markerRef.current = L.marker(pos, { draggable: true }).addTo(mapRef.current)
+          markerRef.current = L.marker(pos, { draggable: true }).addTo(map)
           markerRef.current.on('dragend', () => {
             const p = markerRef.current?.getLatLng()
             if (p) reverseGeocode(p.lat, p.lng)
           })
         }
-        mapRef.current.setView(pos, 10)
-        onPick(rLat, rLng, display_name?.split(',').slice(0, 3).join(',') ?? '')
+        map.setView(pos, 10)
+        onPick(numLat, numLng, display_name?.split(',').slice(0, 3).join(',') ?? '')
       } catch { /* network error — ignore */ }
     })()
     return () => { cancelled = true }
